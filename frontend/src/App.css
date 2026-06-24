@@ -1,14 +1,27 @@
-.app-shell {
+body {
+  margin: 0;
   min-height: 100vh;
+  background: #07111f;
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: radial-gradient(circle at top, #1d2b59 0%, #07101f 58%, #02060f 100%);
   color: #f6f8ff;
 }
 
-body,
-html {
-  margin: 0;
-  min-height: 100%;
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+.app-shell {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, #0b1730 0%, #11264d 45%, #1f3d79 100%);
+}
+
+.landing-shell {
+  padding: 2rem;
 }
 
 * {
@@ -22,4 +35,76 @@ input {
 
 button {
   outline: none;
+
+.hero-card {
+  width: min(620px, 100%);
+  background: rgba(7, 14, 30, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 28px;
+  padding: 2.5rem;
+  box-shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+  text-align: center;
+  color: #f5f7ff;
+}
+
+.eyebrow {
+  margin: 0 0 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 0.8rem;
+  color: #8fb2ff;
+  font-weight: 700;
+}
+
+.hero-card h1 {
+  margin: 0 0 1rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  line-height: 1.1;
+}
+
+.hero-copy {
+  margin: 0 auto 2rem;
+  max-width: 500px;
+  color: rgba(245, 247, 255, 0.8);
+  font-size: 1rem;
+  line-height: 1.6;
+}
+
+.hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.9rem;
+}
+
+.hero-actions button {
+  border: none;
+  border-radius: 999px;
+  padding: 0.95rem 1.25rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.hero-actions button:hover {
+  transform: translateY(-2px);
+}
+
+.primary-action {
+  background: linear-gradient(135deg, #78b5ff, #bcd9ff);
+  color: #07111f;
+  box-shadow: 0 14px 32px rgba(117, 181, 255, 0.28);
+}
+
+.secondary-action {
+  background: rgba(255, 255, 255, 0.1);
+  color: #f5f7ff;
+}
+
+.ghost-action {
+  background: transparent;
+  color: #cfe0ff;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+>>>>>>> d97e7346242d80c82fcf9f6a5e9af7063ed07e64
 }

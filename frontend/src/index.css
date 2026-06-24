@@ -5,7 +5,7 @@
 
   color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
+  background-color: transparent;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -73,3 +73,6 @@ button:focus-visible {
     background-color: #f9f9f9;
   }
 }
+=======
+@import "tailwindcss";
+>>>>>>> d97e7346242d80c82fcf9f6a5e9af7063ed07e64
