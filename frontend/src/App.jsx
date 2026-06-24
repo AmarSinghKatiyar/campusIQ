@@ -52,9 +52,7 @@ function App() {
         </div>
       </section>
     </div>
-  
   )
->>>>>>> d97e7346242d80c82fcf9f6a5e9af7063ed07e64
 }
 
 export default App
