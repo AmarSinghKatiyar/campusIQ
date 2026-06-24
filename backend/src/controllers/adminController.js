@@ -5,6 +5,10 @@ import Admin from '../models/Admin.js';
 dotenv.config();
 
 const generateToken = (id) => {
+  if (!process.env.JWT_SECRET) {
+    throw new Error('JWT_SECRET is not set. Add it to backend/.env');
+  }
+
   return jwt.sign({ id }, process.env.JWT_SECRET, {
     expiresIn: '30d',
   });

@@ -12,6 +12,10 @@ export const protect = async (req, res, next) => {
     req.headers.authorization.startsWith('Bearer')
   ) {
     try {
+      if (!process.env.JWT_SECRET) {
+        return res.status(500).json({ message: 'JWT_SECRET is not configured' });
+      }
+
       token = req.headers.authorization.split(' ')[1];
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
       req.admin = await Admin.findById(decoded.id).select('-password');
