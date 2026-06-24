@@ -1,12 +1,10 @@
 import './App.css'
+import StudentLogin from './components/StudentLogin.jsx'
 
 function App() {
- 
-
   return (
-    <div>
-      Hello campusIQ Landing Page...
-      
+    <div className="app-shell">
+      <StudentLogin />
     </div>
   )
 }
