@@ -1,13 +1,13 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { loginStudent, signupStudent } from '../store/features/auth/authThunks'
 import { logout } from '../store/features/auth/authSlice'
 import './StudentLogin.css'
 
-export default function StudentLogin() {
+export default function StudentLogin({ initialMode = 'signup', onBack }) {
   const dispatch = useDispatch()
   const auth = useSelector((state) => state.auth)
-  const [isSignup, setIsSignup] = useState(true)
+  const [isSignup, setIsSignup] = useState(initialMode === 'login' ? false : true)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -22,6 +22,11 @@ export default function StudentLogin() {
     setPassword('')
     setConfirmPassword('')
   }
+
+  useEffect(() => {
+    setIsSignup(initialMode === 'login' ? false : true)
+    resetForm()
+  }, [initialMode])
 
   const handleSubmit = async (event) => {
     event.preventDefault()
@@ -43,6 +48,12 @@ export default function StudentLogin() {
   return (
     <div className="login-shell">
       <div className="login-card">
+        {onBack ? (
+          <button type="button" className="back-button" onClick={onBack}>
+            ← Back to home
+          </button>
+        ) : null}
+
         <div className="mode-switch">
           <button
             type="button"

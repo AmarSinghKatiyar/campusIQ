@@ -8,6 +8,16 @@
   padding: 1.5rem;
 }
 
+.back-button {
+  margin-bottom: 1rem;
+  border: none;
+  background: transparent;
+  color: #8fb2ff;
+  cursor: pointer;
+  font-weight: 600;
+  padding: 0;
+}
+
 .login-card {
   width: min(420px, 100%);
   background: rgba(12, 18, 44, 0.96);
