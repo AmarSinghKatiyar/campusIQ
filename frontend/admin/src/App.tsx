@@ -15,6 +15,26 @@ import { toast, Toaster } from "sonner";
 type Page = "login" | "signup" | "dashboard";
 type DashboardView = "dashboard" | "students" | "rankings" | "placements" | "reports" | "settings";
 
+type SignUpForm = {
+  fullName: string;
+  email: string;
+  employeeId: string;
+  department: string;
+  password: string;
+  confirmPassword: string;
+  agreed: boolean;
+};
+
+type InputFieldProps = {
+  label: string;
+  name: keyof SignUpForm;
+  type?: string;
+  placeholder: string;
+  icon: React.ReactNode;
+  form: SignUpForm;
+  setValue: (k: keyof SignUpForm, v: string | boolean) => void;
+};
+
 const INDIGO = "#4F46E5";
 const EMERALD = "#10B981";
 
@@ -166,6 +186,24 @@ function ActivityDot({ type }: { type: string }) {
   return (
     <div className={`w-7 h-7 rounded-full flex items-center justify-center flex-shrink-0 ${c.bg} ${c.fg}`}>
       {c.icon}
+    </div>
+  );
+}
+
+function InputField({ label, name, type = "text", placeholder, icon, form, setValue }: InputFieldProps) {
+  return (
+    <div>
+      <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
+      <div className="relative">
+        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
+        <input
+          type={type}
+          value={form[name] as string}
+          onChange={(e) => setValue(name, e.target.value)}
+          placeholder={placeholder}
+          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm outline-none transition-all bg-white"
+        />
+      </div>
     </div>
   );
 }
@@ -385,14 +423,14 @@ function LoginPage({ onNavigate }: { onNavigate: (p: Page) => void }) {
 // ─── Sign Up ───────────────────────────────────────────────────────────────────
 
 function SignUpPage({ onNavigate }: { onNavigate: (p: Page) => void }) {
-  const [form, setForm] = useState({
+  const [form, setForm] = useState<SignUpForm>({
     fullName: "", email: "", employeeId: "", department: "",
     password: "", confirmPassword: "", agreed: false,
   });
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  const set = (k: keyof typeof form, v: string | boolean) =>
+  const set = (k: keyof SignUpForm, v: string | boolean) =>
     setForm(f => ({ ...f, [k]: v }));
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -410,26 +448,6 @@ function SignUpPage({ onNavigate }: { onNavigate: (p: Page) => void }) {
     toast.success("Account created! Redirecting to sign in...");
     setTimeout(() => onNavigate("login"), 1400);
   };
-
-  const InputField = ({
-    label, name, type = "text", placeholder, icon,
-  }: {
-    label: string; name: keyof typeof form; type?: string; placeholder: string; icon: React.ReactNode;
-  }) => (
-    <div>
-      <label className="block text-sm font-semibold text-gray-700 mb-1.5">{label}</label>
-      <div className="relative">
-        <div className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400">{icon}</div>
-        <input
-          type={type}
-          value={form[name] as string}
-          onChange={e => set(name, e.target.value)}
-          placeholder={placeholder}
-          className="w-full pl-10 pr-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm outline-none transition-all bg-white"
-        />
-      </div>
-    </div>
-  );
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4 py-12" style={{ background: "#F8FAFC" }}>
@@ -460,11 +478,11 @@ function SignUpPage({ onNavigate }: { onNavigate: (p: Page) => void }) {
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
           <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <InputField label="Full Name" name="fullName" placeholder="Dr. Rajesh Kumar" icon={<User size={15} />} />
-              <InputField label="Employee ID" name="employeeId" placeholder="TP-2024-001" icon={<IdCard size={15} />} />
+              <InputField label="Full Name" name="fullName" placeholder="Enter your Name" icon={<User size={15} />} form={form} setValue={set} />
+              <InputField label="Employee ID" name="employeeId" placeholder="Enter EMP ID" icon={<IdCard size={15} />} form={form} setValue={set} />
             </div>
-            <InputField label="College Email" name="email" type="email" placeholder="officer@university.edu" icon={<Mail size={15} />} />
-            <InputField label="Department" name="department" placeholder="Training & Placement Cell" icon={<Building2 size={15} />} />
+            <InputField label="College Email" name="email" type="email" placeholder="officer@university.edu.in" icon={<Mail size={15} />} form={form} setValue={set} />
+            <InputField label="Department" name="department" placeholder="Training & Placement Cell" icon={<Building2 size={15} />} form={form} setValue={set} />
 
             {/* Password */}
             <div>
