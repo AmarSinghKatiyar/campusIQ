@@ -5,16 +5,17 @@ dotenv.config();
 
 const connectDB = async () => {
   try {
-    if (!process.env.MONGO_URI) {
-      console.warn('MONGO_URI is not set. MongoDB features will not work.');
-      return;
+    const mongoUri = process.env.MONGO_URI || process.env.MONGODB_URI;
+
+    if (!mongoUri) {
+      throw new Error('MONGO_URI (or MONGODB_URI) is not set. Add it to backend/.env');
     }
 
-    const conn = await mongoose.connect(process.env.MONGO_URI);
+    const conn = await mongoose.connect(mongoUri);
     console.log(`MongoDB connected: ${conn.connection.host}`);
   } catch (error) {
-    console.warn(`MongoDB connection warning: ${error.message}`);
-    console.warn('Server will continue without database connection.');
+    console.error(`MongoDB connection error: ${error.message}`);
+    process.exit(1);
   }
 };
 
