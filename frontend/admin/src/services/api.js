@@ -27,6 +27,7 @@ const makeRequest = async (endpoint, options = {}) => {
 
     return data;
   } catch (error) {
+    console.log("api errror",error)
     console.error('API Error:', error);
     throw error;
   }
