@@ -1,18 +1,12 @@
 import { useState } from 'react'
 import './App.css'
-import StudentLogin from './components/StudentLogin.jsx'
-import StudentDashboard from './components/StudentDashboard.jsx'
+import StudentAuth from './components/StudentAuth'
+import StudentDashboard from './components/StudentDashboard'
 import { useSelector } from 'react-redux'
 
 function App() {
-  const [view, setView] = useState('landing')
-  const [authMode, setAuthMode] = useState('signup')
-  const user = useSelector((state) => state.auth.user)
-
-  const startAuth = (mode) => {
-    setAuthMode(mode)
-    setView('auth')
-  }
+  const [authMode, setAuthMode] = useState('login')
+  const user = useSelector((state) => state.auth?.user)
 
   if (user) {
     return (
@@ -22,45 +16,12 @@ function App() {
     )
   }
 
-  if (view === 'auth') {
-    return (
-      <div className="app-shell">
-        <StudentLogin initialMode={authMode} onBack={() => setView('landing')} />
-      </div>
-    )
-  }
-
   return (
-    <div className="app-shell landing-shell">
-      <section className="hero-card">
-        <div className="brand">
-          <span>{'< />'}</span>
-          CampusIQ
-        </div>
-
-        <h1>
-          Get started with
-          <span className="highlight"> CampusIQ</span>
-        </h1>
-
-        <p className="hero-copy">
-          Join the next generation of matched opportunity and discover campus experiences that fit your goals.
-        </p>
-
-        <div className="hero-actions">
-          <button type="button" className="primary-action" onClick={() => startAuth('signup')}>
-            📧 Register with Email
-          </button>
-
-          <button type="button" className="secondary-action" onClick={() => startAuth('login')}>
-            🔍 Register with Google
-          </button>
-
-          <button type="button" className="ghost-action" onClick={() => startAuth('signup')}>
-            💼 Register with LinkedIn
-          </button>
-        </div>
-      </section>
+    <div className="app-shell">
+      <StudentAuth
+        initialMode={authMode}
+        onBack={() => setAuthMode('login')}
+      />
     </div>
   )
 }

@@ -26,6 +26,12 @@ export default function StudentDashboard() {
           <p className="card-title">Account</p>
           <p className="card-value">{user?.email}</p>
           <p className="card-note">Role: {user?.role}</p>
+          {user?.rollNumber ? <p className="card-note">Roll No: {user.rollNumber}</p> : null}
+          {user?.branch || user?.year ? (
+            <p className="card-note">
+              {[user?.branch, user?.year].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
         </article>
 
         <article className="dashboard-card">

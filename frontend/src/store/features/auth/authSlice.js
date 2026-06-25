@@ -34,6 +34,9 @@ const savePersistedState = (state) => {
           name: state.user.name,
           email: state.user.email,
           role: state.user.role,
+          rollNumber: state.user.rollNumber,
+          branch: state.user.branch,
+          year: state.user.year,
         }
       : null,
   }
@@ -75,6 +78,12 @@ const authSlice = createSlice({
       state.error = null
       savePersistedState(state)
     },
+    clearAuthError(state) {
+      state.error = null
+      if (state.status === 'failed') {
+        state.status = 'idle'
+      }
+    },
     registerUser(state, action) {
       state.registeredUsers.push(action.payload)
       savePersistedState(state)
@@ -82,6 +91,6 @@ const authSlice = createSlice({
   },
 })
 
-export const { authStart, authSuccess, authFailure, logout, registerUser } = authSlice.actions
+export const { authStart, authSuccess, authFailure, logout, clearAuthError, registerUser } = authSlice.actions
 
 export default authSlice.reducer
