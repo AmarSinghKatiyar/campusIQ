@@ -1,10 +1,22 @@
 import { useState } from "react";
-import { Menu, Search, Bell, ChevronDown, X } from "lucide-react";
+import { Menu, Search, Bell, ChevronDown } from "lucide-react";
 import { COLORS } from "../../constants/colors";
 import { notificationsList } from "../../data/mockData";
+import authService from "../../services/authService"; // ✅ import
 
 export function Header({ onToggle }) {
   const [notifOpen, setNotifOpen] = useState(false);
+
+  // Get admin data from localStorage
+  const admin = authService.getAdmin();
+  const displayName = admin?.name || "Admin";
+  // Get initials: first letters of first and last name
+  const initials = displayName
+    .split(" ")
+    .map(n => n[0])
+    .join("")
+    .toUpperCase()
+    .slice(0, 2);
 
   return (
     <header className="h-16 bg-white border-b border-gray-100 flex items-center px-4 gap-3 flex-shrink-0 relative z-20">
@@ -68,10 +80,10 @@ export function Header({ onToggle }) {
             className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold"
             style={{ backgroundColor: COLORS.INDIGO }}
           >
-            RK
+            {initials}
           </div>
           <div className="hidden sm:block text-left">
-            <p className="text-sm font-semibold text-gray-800 leading-tight">Dr. Rajesh Kumar</p>
+            <p className="text-sm font-semibold text-gray-800 leading-tight">{displayName}</p>
             <p className="text-xs text-gray-400">T&P Officer</p>
           </div>
           <ChevronDown size={13} className="text-gray-400 hidden sm:block" />
