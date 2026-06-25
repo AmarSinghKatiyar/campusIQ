@@ -33,21 +33,31 @@ function App() {
   return (
     <div className="app-shell landing-shell">
       <section className="hero-card">
-        <p className="eyebrow">CampusIQ</p>
-        <h1>Get started with CampusIQ</h1>
+        <div className="brand">
+          <span>{'< />'}</span>
+          CampusIQ
+        </div>
+
+        <h1>
+          Get started with
+          <span className="highlight"> CampusIQ</span>
+        </h1>
+
         <p className="hero-copy">
           Join the next generation of matched opportunity and discover campus experiences that fit your goals.
         </p>
 
         <div className="hero-actions">
           <button type="button" className="primary-action" onClick={() => startAuth('signup')}>
-            Register
+            📧 Register with Email
           </button>
+
           <button type="button" className="secondary-action" onClick={() => startAuth('login')}>
-            Login
+            🔍 Register with Google
           </button>
+
           <button type="button" className="ghost-action" onClick={() => startAuth('signup')}>
-            Register with Google
+            💼 Register with LinkedIn
           </button>
         </div>
       </section>
