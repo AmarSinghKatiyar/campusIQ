@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Mail, Lock, Eye, EyeOff, Check, User, IdCard, Building2, ShieldCheck, ChevronRight, GraduationCap } from "lucide-react";
+import { Mail, Lock, Eye, EyeOff, Check, User, IdCard, Building2, ShieldCheck, ChevronRight, GraduationCap, X } from "lucide-react";
 import { toast } from "sonner";
 import { InputField } from "./InputField";
 import { PasswordStrength } from "../Common";
@@ -14,20 +14,37 @@ export function SignUpPage({ onNavigate }) {
   });
   const [showPwd, setShowPwd] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
-  const set = (k, v) =>
+  const set = (k, v) => {
     setForm(f => ({ ...f, [k]: v }));
+    if (errors[k]) {
+      setErrors(prev => ({ ...prev, [k]: undefined }));
+    }
+  };
+
+  const validate = () => {
+    const newErrors = {};
+
+    if (!form.fullName.trim()) newErrors.fullName = "Full name is required";
+    if (!form.email) newErrors.email = "Email is required";
+    else if (!/\S+@\S+\.\S+/.test(form.email)) newErrors.email = "Enter a valid email address";
+    if (!form.employeeId.trim()) newErrors.employeeId = "Employee ID is required";
+    if (!form.department.trim()) newErrors.department = "Department is required";
+    if (!form.password) newErrors.password = "Password is required";
+    else if (form.password.length < 8) newErrors.password = "Password must be at least 8 characters";
+    if (!form.confirmPassword) newErrors.confirmPassword = "Please confirm your password";
+    else if (form.password !== form.confirmPassword) newErrors.confirmPassword = "Passwords do not match";
+    if (!form.agreed) newErrors.agreed = "Please accept the Terms & Conditions";
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!form.fullName || !form.email || !form.employeeId || !form.department) {
-      toast.error("Please fill in all required fields");
-      return;
-    }
-    if (!form.agreed) { toast.error("Please accept the Terms & Conditions"); return; }
-    if (form.password !== form.confirmPassword) { toast.error("Passwords do not match"); return; }
-    if (form.password.length < 8) { toast.error("Password must be at least 8 characters"); return; }
-    
+    if (!validate()) return;
+
     setLoading(true);
     try {
       const response = await authAPI.register({
@@ -139,11 +156,23 @@ export function SignUpPage({ onNavigate }) {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8">
             <form onSubmit={handleSubmit} className="space-y-4" noValidate>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <InputField label="Full Name" name="fullName" placeholder="Enter your Name" icon={<User size={15} />} form={form} setValue={set} />
-                <InputField label="Employee ID" name="employeeId" placeholder="Enter EMP ID" icon={<IdCard size={15} />} form={form} setValue={set} />
+                <div>
+                  <InputField label="Full Name" name="fullName" placeholder="Enter your Name" icon={<User size={15} />} form={form} setValue={set} />
+                  {errors.fullName && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.fullName}</p>}
+                </div>
+                <div>
+                  <InputField label="Employee ID" name="employeeId" placeholder="Enter EMP ID" icon={<IdCard size={15} />} form={form} setValue={set} />
+                  {errors.employeeId && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.employeeId}</p>}
+                </div>
               </div>
-              <InputField label="College Email" name="email" type="email" placeholder="officer@university.edu.in" icon={<Mail size={15} />} form={form} setValue={set} />
-              <InputField label="Department" name="department" placeholder="Training & Placement Cell" icon={<Building2 size={15} />} form={form} setValue={set} />
+              <div>
+                <InputField label="College Email" name="email" type="email" placeholder="officer@university.edu.in" icon={<Mail size={15} />} form={form} setValue={set} />
+                {errors.email && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.email}</p>}
+              </div>
+              <div>
+                <InputField label="Department" name="department" placeholder="Training & Placement Cell" icon={<Building2 size={15} />} form={form} setValue={set} />
+                {errors.department && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.department}</p>}
+              </div>
 
               <div>
                 <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
@@ -154,7 +183,11 @@ export function SignUpPage({ onNavigate }) {
                     value={form.password}
                     onChange={e => set("password", e.target.value)}
                     placeholder="Min. 8 characters"
-                    className="w-full pl-10 pr-11 py-3 rounded-xl border border-gray-200 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-50 text-sm outline-none transition-all bg-white"
+                    className={`w-full pl-10 pr-11 py-3 rounded-xl border text-sm outline-none transition-all bg-white focus:ring-2 ${
+                      errors.password
+                        ? "border-red-300 focus:ring-red-100"
+                        : "border-gray-200 focus:border-indigo-400 focus:ring-indigo-50"
+                    }`}
                   />
                   <button
                     type="button"
@@ -164,6 +197,7 @@ export function SignUpPage({ onNavigate }) {
                     {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
                   </button>
                 </div>
+                {errors.password && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.password}</p>}
                 <PasswordStrength password={form.password} />
               </div>
 
@@ -177,15 +211,18 @@ export function SignUpPage({ onNavigate }) {
                     onChange={e => set("confirmPassword", e.target.value)}
                     placeholder="Re-enter your password"
                     className={`w-full pl-10 pr-10 py-3 rounded-xl border text-sm outline-none transition-all bg-white focus:ring-2 ${
-                      form.confirmPassword && form.confirmPassword !== form.password
+                      errors.confirmPassword
                         ? "border-red-300 focus:ring-red-100"
-                        : "border-gray-200 focus:border-indigo-400 focus:ring-indigo-50"
+                        : form.confirmPassword && form.confirmPassword === form.password
+                          ? "border-emerald-300 focus:border-emerald-400 focus:ring-emerald-50"
+                          : "border-gray-200 focus:border-indigo-400 focus:ring-indigo-50"
                     }`}
                   />
                   {form.confirmPassword && form.confirmPassword === form.password && (
                     <Check size={15} className="absolute right-3.5 top-1/2 -translate-y-1/2 text-emerald-500" />
                   )}
                 </div>
+                {errors.confirmPassword && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.confirmPassword}</p>}
               </div>
 
               <label className="flex items-start gap-2.5 cursor-pointer select-none pt-1">
@@ -210,6 +247,7 @@ export function SignUpPage({ onNavigate }) {
                   </button>
                 </span>
               </label>
+              {errors.agreed && <p className="text-xs text-red-500 mt-1.5 flex items-center gap-1"><X size={11} />{errors.agreed}</p>}
 
               <button
                 type="submit"
