@@ -162,7 +162,7 @@ export function LoginPage({ onNavigate }) {
                   type={showPwd ? "text" : "password"}
                   value={password}
                   onChange={e => setPassword(e.target.value)}
-                  placeholder="••••••••"
+                  placeholder="Enter Password"
                   className={`w-full pl-10 pr-11 py-3 rounded-xl border text-sm outline-none transition-all focus:ring-2 bg-white ${
                     errors.password
                       ? "border-red-300 focus:ring-red-100"
