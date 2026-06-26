@@ -25,7 +25,8 @@ function StudentAuth({ initialMode = 'login', onBack }) {
     rollNumber: '',
     email: '',
     branch: '',
-    year: '',
+    graduationYear: '',
+    cgpa: '',
     password: '',
     confirmPassword: '',
     acceptedTerms: false,
@@ -59,7 +60,8 @@ function StudentAuth({ initialMode = 'login', onBack }) {
       rollNumber: '',
       email: '',
       branch: '',
-      year: '',
+      graduationYear: '',
+      cgpa: '',
       password: '',
       confirmPassword: '',
       acceptedTerms: false,
@@ -89,7 +91,8 @@ function StudentAuth({ initialMode = 'login', onBack }) {
       rollNumber: form.rollNumber,
       email: form.email,
       branch: form.branch,
-      year: form.year,
+      graduationYear: form.graduationYear,
+      cgpa: form.cgpa,
       password: form.password,
       confirmPassword: form.confirmPassword,
     }))
@@ -292,18 +295,38 @@ function StudentAuth({ initialMode = 'login', onBack }) {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="signup-year">Year</label>
+                  <label htmlFor="signup-graduation-year">Graduation Year</label>
                   <div className="input-wrap">
-                    <span className="input-icon">📘</span>
+                    <span className="input-icon">🎓</span>
                     <input
-                      id="signup-year"
-                      type="text"
-                      placeholder="3rd Year"
-                      value={form.year}
-                      onChange={updateField('year')}
+                      id="signup-graduation-year"
+                      type="number"
+                      min="2024"
+                      max="2030"
+                      placeholder="2027"
+                      value={form.graduationYear}
+                      onChange={updateField('graduationYear')}
                       required
                     />
                   </div>
+                </div>
+              </div>
+
+              <div className="form-group">
+                <label htmlFor="signup-cgpa">CGPA</label>
+                <div className="input-wrap">
+                  <span className="input-icon">📊</span>
+                  <input
+                    id="signup-cgpa"
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.01"
+                    placeholder="8.5"
+                    value={form.cgpa}
+                    onChange={updateField('cgpa')}
+                    required
+                  />
                 </div>
               </div>
 

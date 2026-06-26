@@ -1,41 +1,40 @@
-import { authStart, authSuccess, authFailure, registerUser } from './authSlice'
+import { authStart, authSuccess, authFailure } from './authSlice'
 
-const simulateNetworkDelay = () => new Promise((resolve) => setTimeout(resolve, 500))
-
-export const loginStudent = ({ email, password }) => async (dispatch, getState) => {
+export const loginStudent = ({ email, password }) => async (dispatch) => {
   dispatch(authStart())
 
   try {
-    await simulateNetworkDelay()
+    const response = await fetch('http://localhost:5000/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        email: email.trim().toLowerCase(),
+        password,
+      }),
+    })
 
-    const normalizedEmail = email?.trim().toLowerCase()
+    const data = await response.json()
 
-    if (!normalizedEmail || !password) {
-      throw new Error('Email and password are required.')
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Login failed')
     }
 
-    const { registeredUsers } = getState().auth
-    const existingStudent = registeredUsers.find((user) => user.email === normalizedEmail)
+    const student = data.data
 
-    if (!existingStudent) {
-      throw new Error('No account found with this email. Please sign up first.')
-    }
-
-    if (existingStudent.password !== password) {
-      throw new Error('Incorrect password. Please try again.')
-    }
-
-    const student = {
-      id: existingStudent.id,
-      name: existingStudent.name,
-      email: existingStudent.email,
-      role: existingStudent.role,
-      rollNumber: existingStudent.rollNumber,
-      branch: existingStudent.branch,
-      year: existingStudent.year,
-    }
-
-    dispatch(authSuccess(student))
+    dispatch(
+      authSuccess({
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        role: 'student',
+        rollNumber: student.rollNumber,
+        branch: student.branch,
+        graduationYear: student.graduationYear,
+      })
+    )
   } catch (error) {
     dispatch(authFailure(error.message || 'Login failed'))
   }
@@ -46,69 +45,54 @@ export const signupStudent = ({
   rollNumber,
   email,
   branch,
-  year,
+  graduationYear,
+  cgpa,
   password,
   confirmPassword,
-}) => async (dispatch, getState) => {
+}) => async (dispatch) => {
   dispatch(authStart())
 
   try {
-    await simulateNetworkDelay()
-
-    const normalizedEmail = email?.trim().toLowerCase()
-    const trimmedName = name?.trim()
-    const trimmedRollNumber = rollNumber?.trim()
-    const trimmedBranch = branch?.trim()
-    const trimmedYear = year?.trim()
-
-    if (
-      !trimmedName ||
-      !trimmedRollNumber ||
-      !normalizedEmail ||
-      !trimmedBranch ||
-      !trimmedYear ||
-      !password ||
-      !confirmPassword
-    ) {
-      throw new Error('All fields are required.')
-    }
-
-    if (password.length < 8) {
-      throw new Error('Password must be at least 8 characters long.')
-    }
-
     if (password !== confirmPassword) {
       throw new Error('Passwords do not match.')
     }
 
-    const { registeredUsers } = getState().auth
-    const emailTaken = registeredUsers.some((user) => user.email === normalizedEmail)
+    const response = await fetch('http://localhost:5000/api/auth/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        name: name.trim(),
+        email: email.trim().toLowerCase(),
+        password,
+        rollNumber: rollNumber.trim(),
+        branch: branch.trim(),
+        graduationYear: Number(graduationYear),
+        cgpa: Number(cgpa),
+      }),
+    })
 
-    if (emailTaken) {
-      throw new Error('This email is already registered. Please sign in instead.')
+    const data = await response.json()
+
+    if (!response.ok || !data.success) {
+      throw new Error(data.message || 'Signup failed')
     }
 
-    const newStudent = {
-      id: `student-${Date.now()}`,
-      name: trimmedName,
-      rollNumber: trimmedRollNumber,
-      email: normalizedEmail,
-      branch: trimmedBranch,
-      year: trimmedYear,
-      password,
-      role: 'student',
-    }
+    const student = data.data
 
-    dispatch(registerUser(newStudent))
-    dispatch(authSuccess({
-      id: newStudent.id,
-      name: newStudent.name,
-      email: newStudent.email,
-      role: newStudent.role,
-      rollNumber: newStudent.rollNumber,
-      branch: newStudent.branch,
-      year: newStudent.year,
-    }))
+    dispatch(
+      authSuccess({
+        id: student._id,
+        name: student.name,
+        email: student.email,
+        role: 'student',
+        rollNumber: student.rollNumber,
+        branch: student.branch,
+        year: student.graduationYear,
+      })
+    )
   } catch (error) {
     dispatch(authFailure(error.message || 'Signup failed'))
   }
