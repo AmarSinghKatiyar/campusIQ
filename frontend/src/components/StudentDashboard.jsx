@@ -8,6 +8,7 @@ import {
 } from '../store/features/notifications/notificationsThunks'
 import Sidebar from './Sidebar'
 import OpportunitiesPage from './OpportunitiesPage'
+import AssessmentsPage from './AssessmentsPage'
 import './StudentDashboard.css'
 
 const stats = [
@@ -301,6 +302,8 @@ export default function StudentDashboard() {
         )
       case 'opportunities':
         return <OpportunitiesPage />
+      case 'assessments':
+        return <AssessmentsPage />
       default:
         return (
           <div className="flex justify-center items-center h-full">

@@ -24,7 +24,12 @@ export const fetchNotifications = (email) => async (dispatch) => {
       throw new Error('Student email is required to load notifications.')
     }
 
-    const response = await fetch(`${API_BASE}/api/notifications?email=${encodeURIComponent(email)}`)
+    const response = await fetch(
+      `${API_BASE}/api/notifications?email=${encodeURIComponent(email)}`,
+      {
+        credentials: 'include',
+      }
+    )
     const data = await handleResponse(response)
     dispatch(fetchNotificationsSuccess(data.data.notifications || []))
   } catch (error) {
@@ -42,12 +47,12 @@ export const markNotificationRead = ({ email, notificationId }) => async (dispat
       `${API_BASE}/api/notifications/${notificationId}/read?email=${encodeURIComponent(email)}`,
       {
         method: 'PATCH',
+        credentials: 'include',
         headers: {
           'Content-Type': 'application/json',
         },
       },
     )
-
     await handleResponse(response)
     dispatch(markNotificationReadSuccess(notificationId))
   } catch (error) {
@@ -65,6 +70,7 @@ export const deleteNotification = ({ email, notificationId }) => async (dispatch
       `${API_BASE}/api/notifications/${notificationId}?email=${encodeURIComponent(email)}`,
       {
         method: 'DELETE',
+        credentials: 'include',
       },
     )
 
