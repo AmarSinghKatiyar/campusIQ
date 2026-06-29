@@ -9,6 +9,7 @@ const authRoutes = require('../routes/authRoutes');
 const notificationRoutes = require('../routes/notificationRoutes');
 const opportunityRoutes = require('../routes/opportunityRoutes');
 const assessmentRoutes = require("../routes/assessmentRoutes");
+const interviewRoutes = require("../routes/interviewRoutes");
 // Initialize Express app
 const app = express();
 
@@ -49,6 +50,9 @@ app.use('/api/students', studentRoutes);
 
 //assessment routes
 app.use("/api/assessments", assessmentRoutes);
+
+//interview routes
+app.use("/api/interviews", interviewRoutes);
 
 /**
  * Health check endpoint
