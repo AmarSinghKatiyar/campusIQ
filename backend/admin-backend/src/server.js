@@ -7,6 +7,10 @@ import connectDB from './config/db.js';
 import adminRoutes from './routes/adminRoutes.js';
 import dashboardRoutes from './routes/dashboardRoutes.js';
 import studentRoutes from './routes/studentRoutes.js';
+import placementRoutes from './routes/placementRoutes.js';
+import reportRoutes from './routes/reportRoutes.js';
+import rankingRoutes from './routes/rankingRoutes.js';
+import settingsRoutes from './routes/settingsRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -35,6 +39,10 @@ app.use(express.json());
 app.use('/api/admins', adminRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/students', studentRoutes);
+app.use('/api/placements', placementRoutes);
+app.use('/api/reports', reportRoutes);
+app.use('/api/rankings', rankingRoutes);
+app.use('/api/settings', settingsRoutes);
 
 app.get('/', (req, res) => {
   res.send('CampusIQ Backend is running');

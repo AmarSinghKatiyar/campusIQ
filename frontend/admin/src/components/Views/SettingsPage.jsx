@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   User,
   Bell,
@@ -7,7 +7,9 @@ import {
   Camera,
   Check,
   AlertTriangle,
+  Loader2,
 } from "lucide-react";
+import { api, clearToken } from "../lib/api";
 
 const TABS = [
   { key: "profile", label: "Profile", icon: User },
@@ -73,7 +75,7 @@ function ToggleRow({ title, desc, checked, onChange }) {
   );
 }
 
-function SaveBar({ onSave, saved }) {
+function SaveBar({ onSave, saving, saved }) {
   return (
     <div className="flex items-center justify-end gap-3 pt-2">
       {saved && (
@@ -84,26 +86,42 @@ function SaveBar({ onSave, saved }) {
       )}
       <button
         onClick={onSave}
-        className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity"
+        disabled={saving}
+        className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
       >
+        {saving && <Loader2 className="size-4 animate-spin" />}
         Save changes
       </button>
     </div>
   );
 }
 
-function ProfileTab() {
+function ProfileTab({ admin, onUpdated }) {
   const [form, setForm] = useState({
-    name: "Anurag",
-    email: "anurag@mpec.edu.in",
-    role: "Placement Admin",
-    phone: "+91 98765 43210",
+    name: admin.name || "",
+    email: admin.email || "",
+    jobTitle: admin.jobTitle || "Placement Admin",
+    phone: admin.phone || "",
   });
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
     setSaved(false);
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      const updated = await api.put("/settings/profile", form);
+      onUpdated(updated);
+      setSaved(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -119,7 +137,7 @@ function ProfileTab() {
         </div>
         <div>
           <p className="text-foreground font-medium">{form.name}</p>
-          <p className="text-muted-foreground text-sm">{form.role}</p>
+          <p className="text-muted-foreground text-sm">{form.jobTitle}</p>
         </div>
       </div>
 
@@ -128,7 +146,7 @@ function ProfileTab() {
           <TextInput value={form.name} onChange={(e) => update("name", e.target.value)} />
         </Field>
         <Field label="Role">
-          <TextInput value={form.role} onChange={(e) => update("role", e.target.value)} />
+          <TextInput value={form.jobTitle} onChange={(e) => update("jobTitle", e.target.value)} />
         </Field>
         <Field label="Email">
           <TextInput type="email" value={form.email} onChange={(e) => update("email", e.target.value)} />
@@ -138,19 +156,14 @@ function ProfileTab() {
         </Field>
       </div>
 
-      <SaveBar onSave={() => setSaved(true)} saved={saved} />
+      <SaveBar onSave={save} saving={saving} saved={saved} />
     </SectionCard>
   );
 }
 
-function NotificationsTab() {
-  const [prefs, setPrefs] = useState({
-    newApplication: true,
-    studentShortlisted: true,
-    driveDeadline: true,
-    weeklyDigest: false,
-    productUpdates: false,
-  });
+function NotificationsTab({ admin, onUpdated }) {
+  const [prefs, setPrefs] = useState(admin.notificationPrefs || {});
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   function set(key, val) {
@@ -158,55 +171,57 @@ function NotificationsTab() {
     setSaved(false);
   }
 
+  async function save() {
+    setSaving(true);
+    try {
+      const updated = await api.put("/settings/notifications", prefs);
+      onUpdated({ notificationPrefs: updated });
+      setSaved(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <SectionCard title="Notifications" desc="Choose what you get notified about, and how.">
-      <ToggleRow
-        title="New student application"
-        desc="When a student applies to a published drive"
-        checked={prefs.newApplication}
-        onChange={(v) => set("newApplication", v)}
-      />
-      <ToggleRow
-        title="Student shortlisted or placed"
-        desc="When a candidate's stage changes to Shortlisted, Offered, or Placed"
-        checked={prefs.studentShortlisted}
-        onChange={(v) => set("studentShortlisted", v)}
-      />
-      <ToggleRow
-        title="Drive deadline reminders"
-        desc="24 hours before a published drive's application deadline"
-        checked={prefs.driveDeadline}
-        onChange={(v) => set("driveDeadline", v)}
-      />
-      <ToggleRow
-        title="Weekly digest"
-        desc="Summary of placements, applications, and readiness trends"
-        checked={prefs.weeklyDigest}
-        onChange={(v) => set("weeklyDigest", v)}
-      />
-      <ToggleRow
-        title="Product updates"
-        desc="New CampusIQ features and changes"
-        checked={prefs.productUpdates}
-        onChange={(v) => set("productUpdates", v)}
-      />
-      <SaveBar onSave={() => setSaved(true)} saved={saved} />
+      <ToggleRow title="New student application" desc="When a student applies to a published drive" checked={!!prefs.newApplication} onChange={(v) => set("newApplication", v)} />
+      <ToggleRow title="Student shortlisted or placed" desc="When a candidate's stage changes to Shortlisted, Offered, or Placed" checked={!!prefs.studentShortlisted} onChange={(v) => set("studentShortlisted", v)} />
+      <ToggleRow title="Drive deadline reminders" desc="24 hours before a published drive's application deadline" checked={!!prefs.driveDeadline} onChange={(v) => set("driveDeadline", v)} />
+      <ToggleRow title="Weekly digest" desc="Summary of placements, applications, and readiness trends" checked={!!prefs.weeklyDigest} onChange={(v) => set("weeklyDigest", v)} />
+      <ToggleRow title="Product updates" desc="New CampusIQ features and changes" checked={!!prefs.productUpdates} onChange={(v) => set("productUpdates", v)} />
+      <SaveBar onSave={save} saving={saving} saved={saved} />
     </SectionCard>
   );
 }
 
-function InstitutionTab() {
+function InstitutionTab({ admin, onUpdated }) {
   const [form, setForm] = useState({
-    name: "Maharana Pratap Engineering College",
-    code: "MPEC",
-    city: "Kanpur",
-    academicYear: "2026–27",
+    name: admin.institution?.name || "",
+    code: admin.institution?.code || "",
+    city: admin.institution?.city || "",
+    academicYear: admin.institution?.academicYear || "",
   });
+  const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
     setSaved(false);
+  }
+
+  async function save() {
+    setSaving(true);
+    try {
+      const updated = await api.put("/settings/institution", form);
+      onUpdated({ institution: updated });
+      setSaved(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   return (
@@ -222,10 +237,10 @@ function InstitutionTab() {
           <TextInput value={form.city} onChange={(e) => update("city", e.target.value)} />
         </Field>
         <Field label="Current academic year">
-          <TextInput value={form.academicYear} onChange={(e) => update("academicYear", e.target.value)} />
+          <TextInput value={form.academicYear} onChange={(e) => update("academicYear", e.target.value)} placeholder="e.g. 2026–27" />
         </Field>
       </div>
-      <SaveBar onSave={() => setSaved(true)} saved={saved} />
+      <SaveBar onSave={save} saving={saving} saved={saved} />
     </SectionCard>
   );
 }
@@ -233,7 +248,20 @@ function InstitutionTab() {
 function DeleteAccountSection() {
   const [confirmText, setConfirmText] = useState("");
   const [open, setOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
   const canDelete = confirmText === "DELETE";
+
+  async function confirmDelete() {
+    setDeleting(true);
+    try {
+      await api.del("/settings/account");
+      clearToken();
+      window.location.reload();
+    } catch (err) {
+      alert(err.message);
+      setDeleting(false);
+    }
+  }
 
   return (
     <SectionCard title="Delete account">
@@ -249,35 +277,24 @@ function DeleteAccountSection() {
       </div>
 
       {!open ? (
-        <button
-          onClick={() => setOpen(true)}
-          className="rounded-lg border border-[var(--destructive)] text-[var(--destructive)] px-4 py-2 text-sm font-medium hover:bg-[color-mix(in_oklab,var(--destructive)_8%,white)] transition-colors"
-        >
+        <button onClick={() => setOpen(true)} className="rounded-lg border border-[var(--destructive)] text-[var(--destructive)] px-4 py-2 text-sm font-medium hover:bg-[color-mix(in_oklab,var(--destructive)_8%,white)] transition-colors">
           Delete my account
         </button>
       ) : (
         <div className="space-y-3">
           <Field label={'Type "DELETE" to confirm'}>
-            <TextInput
-              value={confirmText}
-              onChange={(e) => setConfirmText(e.target.value)}
-              placeholder="DELETE"
-            />
+            <TextInput value={confirmText} onChange={(e) => setConfirmText(e.target.value)} placeholder="DELETE" />
           </Field>
           <div className="flex items-center gap-2">
             <button
-              disabled={!canDelete}
-              className="rounded-lg bg-[var(--destructive)] px-4 py-2 text-sm text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
+              disabled={!canDelete || deleting}
+              onClick={confirmDelete}
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--destructive)] px-4 py-2 text-sm text-white font-medium hover:opacity-90 transition-opacity disabled:opacity-40"
             >
+              {deleting && <Loader2 className="size-4 animate-spin" />}
               Confirm deletion
             </button>
-            <button
-              onClick={() => {
-                setOpen(false);
-                setConfirmText("");
-              }}
-              className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
-            >
+            <button onClick={() => { setOpen(false); setConfirmText(""); }} className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
               Cancel
             </button>
           </div>
@@ -287,12 +304,38 @@ function DeleteAccountSection() {
   );
 }
 
-function SecurityTab() {
+function SecurityTab({ admin, onUpdated }) {
   const [pw, setPw] = useState({ current: "", next: "", confirm: "" });
-  const [twoFA, setTwoFA] = useState(false);
+  const [twoFA, setTwoFA] = useState(admin.twoFactorEnabled || false);
+  const [savingPw, setSavingPw] = useState(false);
   const [saved, setSaved] = useState(false);
 
   const mismatch = pw.next && pw.confirm && pw.next !== pw.confirm;
+
+  async function savePassword() {
+    if (mismatch || !pw.current || !pw.next) return;
+    setSavingPw(true);
+    try {
+      await api.put("/settings/password", { currentPassword: pw.current, newPassword: pw.next });
+      setPw({ current: "", next: "", confirm: "" });
+      setSaved(true);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSavingPw(false);
+    }
+  }
+
+  async function toggleTwoFA(value) {
+    setTwoFA(value);
+    try {
+      await api.put("/settings/two-factor", { enabled: value });
+      onUpdated({ twoFactorEnabled: value });
+    } catch (err) {
+      alert(err.message);
+      setTwoFA(!value);
+    }
+  }
 
   return (
     <div className="space-y-4">
@@ -310,16 +353,11 @@ function SecurityTab() {
           </Field>
         </div>
         {mismatch && <p className="text-xs text-[var(--destructive)]">Passwords don't match.</p>}
-        <SaveBar onSave={() => setSaved(true)} saved={saved && !mismatch} />
+        <SaveBar onSave={savePassword} saving={savingPw} saved={saved && !mismatch} />
       </SectionCard>
 
       <SectionCard title="Two-factor authentication">
-        <ToggleRow
-          title="Require a verification code at sign-in"
-          desc="Adds an extra step using an authenticator app"
-          checked={twoFA}
-          onChange={setTwoFA}
-        />
+        <ToggleRow title="Require a verification code at sign-in" desc="Adds an extra step using an authenticator app" checked={twoFA} onChange={toggleTwoFA} />
       </SectionCard>
 
       <DeleteAccountSection />
@@ -329,6 +367,20 @@ function SecurityTab() {
 
 export function SettingsPage() {
   const [tab, setTab] = useState("profile");
+  const [admin, setAdmin] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.get("/settings/profile")
+      .then(setAdmin)
+      .catch((e) => setError(e.message))
+      .finally(() => setLoading(false));
+  }, []);
+
+  function applyUpdate(partial) {
+    setAdmin((a) => ({ ...a, ...partial }));
+  }
 
   return (
     <div className="p-6 lg:p-8 space-y-6">
@@ -339,33 +391,41 @@ export function SettingsPage() {
         </p>
       </div>
 
-      <nav className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1 overflow-x-auto">
-        {TABS.map((t) => {
-          const Icon = t.icon;
-          const active = t.key === tab;
-          return (
-            <button
-              key={t.key}
-              onClick={() => setTab(t.key)}
-              className={`inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm whitespace-nowrap transition-colors ${
-                active
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
-              }`}
-            >
-              <Icon className="size-4" />
-              {t.label}
-            </button>
-          );
-        })}
-      </nav>
+      {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
 
-      <div>
-        {tab === "profile" && <ProfileTab />}
-        {tab === "notifications" && <NotificationsTab />}
-        {tab === "institution" && <InstitutionTab />}
-        {tab === "security" && <SecurityTab />}
-      </div>
+      {loading || !admin ? (
+        <div className="flex items-center gap-2 text-muted-foreground py-10 justify-center">
+          <Loader2 className="size-4 animate-spin" /> Loading settings…
+        </div>
+      ) : (
+        <>
+          <nav className="inline-flex items-center gap-1 rounded-lg border border-border bg-card p-1 overflow-x-auto">
+            {TABS.map((t) => {
+              const Icon = t.icon;
+              const active = t.key === tab;
+              return (
+                <button
+                  key={t.key}
+                  onClick={() => setTab(t.key)}
+                  className={`inline-flex items-center gap-2 rounded-md px-3.5 py-2 text-sm whitespace-nowrap transition-colors ${
+                    active ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  <Icon className="size-4" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </nav>
+
+          <div>
+            {tab === "profile" && <ProfileTab admin={admin} onUpdated={applyUpdate} />}
+            {tab === "notifications" && <NotificationsTab admin={admin} onUpdated={applyUpdate} />}
+            {tab === "institution" && <InstitutionTab admin={admin} onUpdated={applyUpdate} />}
+            {tab === "security" && <SecurityTab admin={admin} onUpdated={applyUpdate} />}
+          </div>
+        </>
+      )}
     </div>
   );
 }
