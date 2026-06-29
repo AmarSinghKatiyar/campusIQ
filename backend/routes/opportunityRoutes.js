@@ -1,4 +1,5 @@
 const express = require('express');
+<<<<<<< HEAD
 const {
   getAllOpportunities,
   getOpportunityById,
@@ -10,10 +11,14 @@ const {
 
 const authMiddleware = require('../middleware/authMiddleware');
 const adminMiddleware = require('../middleware/adminMiddleware');
+=======
+const { getAllOpportunities } = require('../controllers/opportunityController');
+>>>>>>> 2c05d62b9f8e0fd727b227128ca5915d840d4fe5
 
 const router = express.Router();
 
 /**
+<<<<<<< HEAD
  * ========================================
  *          Opportunity Routes
  * ========================================
@@ -37,5 +42,15 @@ router
 
 // @desc    Apply to an opportunity
 router.post('/:id/apply', authMiddleware, applyToOpportunity);
+=======
+ * Opportunity Routes
+ */
+
+/**
+ * GET /api/opportunities
+ * Get all active opportunities
+ */
+router.get('/', getAllOpportunities);
+>>>>>>> 2c05d62b9f8e0fd727b227128ca5915d840d4fe5
 
 module.exports = router;
