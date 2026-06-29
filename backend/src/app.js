@@ -6,6 +6,8 @@ require('dotenv').config();
 // Import routes
 const studentRoutes = require('../routes/studentRoutes');
 const authRoutes = require('../routes/authRoutes');
+const notificationRoutes = require('../routes/notificationRoutes');
+const opportunityRoutes = require('../routes/opportunityRoutes');
 
 // Initialize Express app
 const app = express();
@@ -35,6 +37,12 @@ app.use(cookieParser());
 
 // Authentication routes
 app.use('/api/auth', authRoutes);
+
+// Notification routes
+app.use('/api/notifications', notificationRoutes);
+
+// Opportunity routes
+app.use('/api/opportunities', opportunityRoutes);
 
 // Student routes (all protected)
 app.use('/api/students', studentRoutes);

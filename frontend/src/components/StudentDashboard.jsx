@@ -1,18 +1,14 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../store/features/auth/authSlice'
+import {
+  fetchNotifications,
+  markNotificationRead,
+  deleteNotification,
+} from '../store/features/notifications/notificationsThunks'
+import Sidebar from './Sidebar'
+import OpportunitiesPage from './OpportunitiesPage'
 import './StudentDashboard.css'
-
-const navItems = [
-  { id: 'overview', label: 'Overview', icon: 'grid' },
-  { id: 'opportunities', label: 'Opportunities', icon: 'briefcase' },
-  { id: 'applications', label: 'Applications', icon: 'document' },
-  { id: 'interviews', label: 'Interviews', icon: 'calendar' },
-  { id: 'learning', label: 'Learning', icon: 'book' },
-  { id: 'assessments', label: 'Assessments', icon: 'clock' },
-  { id: 'profile', label: 'Profile', icon: 'user' },
-  { id: 'settings', label: 'Settings', icon: 'settings' },
-]
 
 const stats = [
   { label: 'Applications', value: '12', trend: '20% this week', icon: 'briefcase', tone: 'purple' },
@@ -60,9 +56,57 @@ function DashboardIcon({ name }) {
 export default function StudentDashboard() {
   const dispatch = useDispatch()
   const user = useSelector((state) => state.auth.user)
+  const notifications = useSelector((state) => state.notifications?.list || [])
+  const notificationsStatus = useSelector((state) => state.notifications?.status)
+  const notificationsError = useSelector((state) => state.notifications?.error)
   const [activeView, setActiveView] = useState('overview')
   const [range, setRange] = useState('This Month')
   const [notice, setNotice] = useState('')
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const notificationsButtonRef = useRef(null)
+  const notificationPanelRef = useRef(null)
+
+  const unreadCount = useMemo(
+    () => notifications.filter((item) => !item.isRead).length,
+    [notifications],
+  )
+
+  useEffect(() => {
+    if (user?.email) {
+      dispatch(fetchNotifications(user.email))
+    }
+  }, [dispatch, user?.email])
+
+  useEffect(() => {
+    const handleOutsideClick = (event) => {
+      if (
+        isNotificationsOpen &&
+        notificationPanelRef.current &&
+        !notificationPanelRef.current.contains(event.target) &&
+        notificationsButtonRef.current &&
+        !notificationsButtonRef.current.contains(event.target)
+      ) {
+        setIsNotificationsOpen(false)
+      }
+    }
+
+    window.addEventListener('mousedown', handleOutsideClick)
+    return () => window.removeEventListener('mousedown', handleOutsideClick)
+  }, [isNotificationsOpen])
+
+  const handleToggleNotifications = () => {
+    setIsNotificationsOpen((open) => !open)
+  }
+
+  const handleMarkNotificationRead = async (notificationId) => {
+    await dispatch(markNotificationRead({ email: user?.email, notificationId }))
+    setNotice('Notification marked as read')
+  }
+
+  const handleDeleteNotification = async (notificationId) => {
+    await dispatch(deleteNotification({ email: user?.email, notificationId }))
+    setNotice('Notification removed')
+  }
 
   const firstName = user?.name?.split(' ')?.[0] || 'Student'
   const initials = useMemo(() => {
@@ -80,38 +124,204 @@ export default function StudentDashboard() {
     window.setTimeout(() => setNotice(''), 2200)
   }
 
+  const handleNavigate = (viewId, viewLabel) => {
+    setActiveView(viewId)
+    handleAction(`${viewLabel} section selected`)
+  }
+
+  const renderActiveView = () => {
+    switch (activeView) {
+      case 'overview':
+        return (
+          <>
+            <div className="welcome-block">
+              <h2>Welcome back, {firstName}!</h2>
+              <p>Here&apos;s what&apos;s happening with your placements today.</p>
+            </div>
+
+            {notice ? <p className="dashboard-notice">{notice}</p> : null}
+
+            <section className="stats-grid" aria-label="Placement summary">
+              {stats.map((item) => (
+                <article className="stat-card" key={item.label}>
+                  <div className={`stat-icon ${item.tone}`}>
+                    <DashboardIcon name={item.icon} />
+                  </div>
+                  <div className="stat-copy">
+                    <strong>{item.value}</strong>
+                    <span>{item.label}</span>
+                    {item.trend ? <small>↑ {item.trend}</small> : null}
+                    {item.progress ? (
+                      <span className="profile-progress" aria-label={`${item.progress}% profile strength`}>
+                        <span style={{ width: `${item.progress}%` }} />
+                      </span>
+                    ) : null}
+                  </div>
+                </article>
+              ))}
+            </section>
+
+            <section className="dashboard-panels">
+              <article className="panel chart-panel">
+                <div className="panel-header">
+                  <h3>Application Trend</h3>
+                  <select value={range} onChange={(event) => setRange(event.target.value)}>
+                    <option>This Month</option>
+                    <option>Last Month</option>
+                    <option>This Quarter</option>
+                  </select>
+                </div>
+
+                <div className="trend-chart" aria-label={`Application trend for ${range}`}>
+                  <div className="chart-scale">
+                    <span>20</span>
+                    <span>15</span>
+                    <span>10</span>
+                    <span>5</span>
+                    <span>0</span>
+                  </div>
+                  <svg viewBox="0 0 100 78" role="img" aria-hidden="true">
+                    <defs>
+                      <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
+                        <stop offset="0%" stopColor="#6338f6" stopOpacity="0.28" />
+                        <stop offset="100%" stopColor="#6338f6" stopOpacity="0" />
+                      </linearGradient>
+                    </defs>
+                    <path
+                      className="chart-fill"
+                      d={`M ${chartPoints.map((point) => `${point.x} ${point.y}`).join(' L ')} L 93 76 L 5 76 Z`}
+                    />
+                    <polyline
+                      className="chart-line"
+                      points={chartPoints.map((point) => `${point.x},${point.y}`).join(' ')}
+                    />
+                  </svg>
+                  <div className="chart-labels">
+                    <span>Jun 1</span>
+                    <span>Jun 8</span>
+                    <span>Jun 15</span>
+                    <span>Jun 22</span>
+                    <span>Jun 29</span>
+                  </div>
+                </div>
+              </article>
+
+              <article className="panel skills-panel">
+                <div className="panel-header">
+                  <h3>Top Skills</h3>
+                  <button type="button" onClick={() => handleAction('Opening all skills')}>
+                    View all
+                  </button>
+                </div>
+                <div className="skill-list">
+                  {skills.map((skill) => (
+                    <div className="skill-row" key={skill.name}>
+                      <div>
+                        <span>{skill.name}</span>
+                        <strong>{skill.score}%</strong>
+                      </div>
+                      <span className="skill-track">
+                        <span style={{ width: `${skill.score}%` }} />
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </article>
+            </section>
+
+            <section className="dashboard-panels bottom-panels">
+              <article className="panel list-panel">
+                <div className="panel-header">
+                  <h3>Recommended Opportunities</h3>
+                  <button type="button" onClick={() => handleAction('Opening all opportunities')}>
+                    View all
+                  </button>
+                </div>
+                <div className="opportunity-list">
+                  {opportunities.map((item) => (
+                    <button
+                      className="opportunity-row"
+                      key={item.title}
+                      type="button"
+                      onClick={() => handleAction(`${item.title} selected`)}
+                    >
+                      <span className={`company-logo ${item.company.toLowerCase()}`}>{item.logo}</span>
+                      <span className="row-copy">
+                        <strong>{item.title}</strong>
+                        <small>{item.meta}</small>
+                      </span>
+                      <span className="match-pill">Match: {item.match}</span>
+                      <DashboardIcon name="chevron" />
+                    </button>
+                  ))}
+                </div>
+              </article>
+
+              <article className="panel list-panel">
+                <div className="panel-header">
+                  <h3>Upcoming Interviews</h3>
+                  <button type="button" onClick={() => handleAction('Opening all interviews')}>
+                    View all
+                  </button>
+                </div>
+                <div className="interview-list">
+                  {interviews.map((item) => (
+                    <button
+                      className="interview-row"
+                      key={item.title}
+                      type="button"
+                      onClick={() => handleAction(`${item.company} interview selected`)}
+                    >
+                      <span className={`company-logo ${item.company.toLowerCase()}`}>{item.logo}</span>
+                      <span className="row-copy">
+                        <strong>{item.title}</strong>
+                        <small>{item.round}</small>
+                      </span>
+                      <span className="date-copy">
+                        <strong>{item.date}</strong>
+                        <small>{item.time}</small>
+                      </span>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  className="all-interviews-btn"
+                  type="button"
+                  onClick={() => {
+                    setActiveView('interviews')
+                    handleAction('Interviews section selected')
+                  }}
+                >
+                  <DashboardIcon name="calendar" />
+                  <span>See All Interviews</span>
+                </button>
+              </article>
+            </section>
+          </>
+        )
+      case 'opportunities':
+        return <OpportunitiesPage />
+      default:
+        return (
+          <div className="flex justify-center items-center h-full">
+            <div className="text-center">
+              <h2 className="text-2xl font-semibold text-gray-700">Page Not Found</h2>
+              <p className="text-gray-500 mt-2">
+                The page for &quot;{activeView}&quot; has not been built yet.
+              </p>
+            </div>
+          </div>
+        )
+    }
+  }
+
   return (
     <div className="student-dashboard">
-      <aside className="dashboard-sidebar">
-        <div className="dashboard-brand">
-          <span className="brand-mark">
-            <DashboardIcon name="cap" />
-          </span>
-          <span>CampusIQ</span>
-        </div>
-
-        <nav className="dashboard-nav" aria-label="Student dashboard">
-          {navItems.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={activeView === item.id ? 'nav-item active' : 'nav-item'}
-              onClick={() => {
-                setActiveView(item.id)
-                handleAction(`${item.label} section selected`)
-              }}
-            >
-              <DashboardIcon name={item.icon} />
-              <span>{item.label}</span>
-            </button>
-          ))}
-        </nav>
-
-        <button className="sidebar-logout" type="button" onClick={() => dispatch(logout())}>
-          <DashboardIcon name="logout" />
-          <span>Logout</span>
-        </button>
-      </aside>
+      <Sidebar
+        activeView={activeView}
+        onNavigate={handleNavigate}
+        onLogout={() => dispatch(logout())}
+      />
 
       <main className="dashboard-main">
         <header className="topbar">
@@ -122,10 +332,11 @@ export default function StudentDashboard() {
               className="notification-btn"
               type="button"
               aria-label="Notifications"
-              onClick={() => handleAction('You have 3 new notifications')}
+              onClick={handleToggleNotifications}
+              ref={notificationsButtonRef}
             >
               <DashboardIcon name="bell" />
-              <span>3</span>
+              {unreadCount > 0 ? <span className="notification-badge">{unreadCount}</span> : null}
             </button>
 
             <button
@@ -141,173 +352,76 @@ export default function StudentDashboard() {
               <DashboardIcon name="chevron" />
             </button>
           </div>
+
+          {isNotificationsOpen ? (
+            <div
+              className="notification-panel"
+              ref={notificationPanelRef}
+              role="dialog"
+              aria-label="Notifications"
+            >
+              <div className="notification-panel-header">
+                <strong>Notifications</strong>
+                <button
+                  type="button"
+                  className="notification-close-btn"
+                  onClick={() => setIsNotificationsOpen(false)}
+                >
+                  Close
+                </button>
+              </div>
+
+              {notificationsStatus === 'loading' ? (
+                <p className="notification-state">Loading notifications...</p>
+              ) : notificationsError ? (
+                <p className="notification-error">{notificationsError}</p>
+              ) : notifications.length === 0 ? (
+                <p className="notification-empty">No notifications yet.</p>
+              ) : (
+                <div className="notification-list">
+                  {notifications.map((notification) => (
+                    <div
+                      key={notification._id}
+                      className={`notification-row ${notification.isRead ? '' : 'unread'}`}
+                    >
+                      <div className="notification-copy">
+                        <strong>{notification.title}</strong>
+                        <p>{notification.message}</p>
+                        <small>{new Date(notification.createdAt).toLocaleString()}</small>
+                      </div>
+                      <div className="notification-actions">
+                        {!notification.isRead ? (
+                          <button
+                            type="button"
+                            className="notification-action-btn"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              handleMarkNotificationRead(notification._id)
+                            }}
+                          >
+                            Mark read
+                          </button>
+                        ) : null}
+                        <button
+                          type="button"
+                          className="notification-action-btn danger"
+                          onClick={(event) => {
+                            event.stopPropagation()
+                            handleDeleteNotification(notification._id)
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          ) : null}
         </header>
 
-        <section className="dashboard-content">
-          <div className="welcome-block">
-            <h2>Welcome back, {firstName}!</h2>
-            <p>Here&apos;s what&apos;s happening with your placements today.</p>
-          </div>
-
-          {notice ? <p className="dashboard-notice">{notice}</p> : null}
-
-          <section className="stats-grid" aria-label="Placement summary">
-            {stats.map((item) => (
-              <article className="stat-card" key={item.label}>
-                <div className={`stat-icon ${item.tone}`}>
-                  <DashboardIcon name={item.icon} />
-                </div>
-                <div className="stat-copy">
-                  <strong>{item.value}</strong>
-                  <span>{item.label}</span>
-                  {item.trend ? <small>↑ {item.trend}</small> : null}
-                  {item.progress ? (
-                    <span className="profile-progress" aria-label={`${item.progress}% profile strength`}>
-                      <span style={{ width: `${item.progress}%` }} />
-                    </span>
-                  ) : null}
-                </div>
-              </article>
-            ))}
-          </section>
-
-          <section className="dashboard-panels">
-            <article className="panel chart-panel">
-              <div className="panel-header">
-                <h3>Application Trend</h3>
-                <select value={range} onChange={(event) => setRange(event.target.value)}>
-                  <option>This Month</option>
-                  <option>Last Month</option>
-                  <option>This Quarter</option>
-                </select>
-              </div>
-
-              <div className="trend-chart" aria-label={`Application trend for ${range}`}>
-                <div className="chart-scale">
-                  <span>20</span>
-                  <span>15</span>
-                  <span>10</span>
-                  <span>5</span>
-                  <span>0</span>
-                </div>
-                <svg viewBox="0 0 100 78" role="img" aria-hidden="true">
-                  <defs>
-                    <linearGradient id="trendFill" x1="0" x2="0" y1="0" y2="1">
-                      <stop offset="0%" stopColor="#6338f6" stopOpacity="0.28" />
-                      <stop offset="100%" stopColor="#6338f6" stopOpacity="0" />
-                    </linearGradient>
-                  </defs>
-                  <path
-                    className="chart-fill"
-                    d={`M ${chartPoints.map((point) => `${point.x} ${point.y}`).join(' L ')} L 93 76 L 5 76 Z`}
-                  />
-                  <polyline
-                    className="chart-line"
-                    points={chartPoints.map((point) => `${point.x},${point.y}`).join(' ')}
-                  />
-                </svg>
-                <div className="chart-labels">
-                  <span>Jun 1</span>
-                  <span>Jun 8</span>
-                  <span>Jun 15</span>
-                  <span>Jun 22</span>
-                  <span>Jun 29</span>
-                </div>
-              </div>
-            </article>
-
-            <article className="panel skills-panel">
-              <div className="panel-header">
-                <h3>Top Skills</h3>
-                <button type="button" onClick={() => handleAction('Opening all skills')}>
-                  View all
-                </button>
-              </div>
-              <div className="skill-list">
-                {skills.map((skill) => (
-                  <div className="skill-row" key={skill.name}>
-                    <div>
-                      <span>{skill.name}</span>
-                      <strong>{skill.score}%</strong>
-                    </div>
-                    <span className="skill-track">
-                      <span style={{ width: `${skill.score}%` }} />
-                    </span>
-                  </div>
-                ))}
-              </div>
-            </article>
-          </section>
-
-          <section className="dashboard-panels bottom-panels">
-            <article className="panel list-panel">
-              <div className="panel-header">
-                <h3>Recommended Opportunities</h3>
-                <button type="button" onClick={() => handleAction('Opening all opportunities')}>
-                  View all
-                </button>
-              </div>
-              <div className="opportunity-list">
-                {opportunities.map((item) => (
-                  <button
-                    className="opportunity-row"
-                    key={item.title}
-                    type="button"
-                    onClick={() => handleAction(`${item.title} selected`)}
-                  >
-                    <span className={`company-logo ${item.company.toLowerCase()}`}>{item.logo}</span>
-                    <span className="row-copy">
-                      <strong>{item.title}</strong>
-                      <small>{item.meta}</small>
-                    </span>
-                    <span className="match-pill">Match: {item.match}</span>
-                    <DashboardIcon name="chevron" />
-                  </button>
-                ))}
-              </div>
-            </article>
-
-            <article className="panel list-panel">
-              <div className="panel-header">
-                <h3>Upcoming Interviews</h3>
-                <button type="button" onClick={() => handleAction('Opening all interviews')}>
-                  View all
-                </button>
-              </div>
-              <div className="interview-list">
-                {interviews.map((item) => (
-                  <button
-                    className="interview-row"
-                    key={item.title}
-                    type="button"
-                    onClick={() => handleAction(`${item.company} interview selected`)}
-                  >
-                    <span className={`company-logo ${item.company.toLowerCase()}`}>{item.logo}</span>
-                    <span className="row-copy">
-                      <strong>{item.title}</strong>
-                      <small>{item.round}</small>
-                    </span>
-                    <span className="date-copy">
-                      <strong>{item.date}</strong>
-                      <small>{item.time}</small>
-                    </span>
-                  </button>
-                ))}
-              </div>
-              <button
-                className="all-interviews-btn"
-                type="button"
-                onClick={() => {
-                  setActiveView('interviews')
-                  handleAction('Interviews section selected')
-                }}
-              >
-                <DashboardIcon name="calendar" />
-                <span>See All Interviews</span>
-              </button>
-            </article>
-          </section>
-        </section>
+        <section className="dashboard-content">{renderActiveView()}</section>
       </main>
     </div>
   )
