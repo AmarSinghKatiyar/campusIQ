@@ -1,10 +1,18 @@
 import { authStart, authSuccess, authFailure } from './authSlice'
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
+
+const getAuthErrorMessage = (error, fallback) => (
+  error.message === 'Failed to fetch'
+    ? 'Unable to connect to the server. Please check if the backend is running.'
+    : error.message || fallback
+)
+
 export const loginStudent = ({ email, password }) => async (dispatch) => {
   dispatch(authStart())
 
   try {
-    const response = await fetch('http://localhost:5000/api/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -43,7 +51,7 @@ export const loginStudent = ({ email, password }) => async (dispatch) => {
       })
     )
   } catch (error) {
-    dispatch(authFailure(error.message || 'Login failed'))
+    dispatch(authFailure(getAuthErrorMessage(error, 'Login failed')))
   }
 }
 
@@ -64,7 +72,7 @@ export const signupStudent = ({
       throw new Error('Passwords do not match.')
     }
 
-    const response = await fetch('http://localhost:5000/api/auth/register', {
+    const response = await fetch(`${API_BASE_URL}/auth/register`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -108,6 +116,6 @@ export const signupStudent = ({
       })
     )
   } catch (error) {
-    dispatch(authFailure(error.message || 'Signup failed'))
+    dispatch(authFailure(getAuthErrorMessage(error, 'Signup failed')))
   }
 }

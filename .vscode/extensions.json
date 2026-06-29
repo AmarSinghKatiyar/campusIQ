@@ -1,5 +1,6 @@
 {
     "recommendations": [
-        "zencoderai.zencoder"
+        "google.geminicodeassist",
+        "googlecloudtools.cloudcode"
     ]
 }
