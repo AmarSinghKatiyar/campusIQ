@@ -8,7 +8,7 @@ const studentRoutes = require('../routes/studentRoutes');
 const authRoutes = require('../routes/authRoutes');
 const notificationRoutes = require('../routes/notificationRoutes');
 const opportunityRoutes = require('../routes/opportunityRoutes');
-
+const assessmentRoutes = require("../routes/assessmentRoutes");
 // Initialize Express app
 const app = express();
 
@@ -47,6 +47,8 @@ app.use('/api/opportunities', opportunityRoutes);
 // Student routes (all protected)
 app.use('/api/students', studentRoutes);
 
+//assessment routes
+app.use("/api/assessments", assessmentRoutes);
 
 /**
  * Health check endpoint

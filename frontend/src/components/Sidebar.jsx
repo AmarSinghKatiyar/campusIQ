@@ -7,7 +7,6 @@ function DashboardIcon({ name }) {
 const navItems = [
   { id: 'overview', label: 'Overview', icon: 'grid' },
   { id: 'opportunities', label: 'Opportunities', icon: 'briefcase' },
-  { id: 'applications', label: 'Applications', icon: 'document' },
   { id: 'interviews', label: 'Interviews', icon: 'calendar' },
   { id: 'learning', label: 'Learning', icon: 'book' },
   { id: 'assessments', label: 'Assessments', icon: 'clock' },
