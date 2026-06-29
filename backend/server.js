@@ -12,6 +12,7 @@ const dns = require("node:dns");
 dns.setServers(["1.1.1.1", "8.8.8.8"]);
 require('dotenv').config();
 
+
 // Port configuration
 const PORT = process.env.PORT || 5000;
 
