@@ -97,6 +97,32 @@ const studentSchema = new mongoose.Schema(
       ],
       default: 'Unplaced',
     },
+    notifications: [
+      {
+        title: {
+          type: String,
+          required: [true, 'Notification title is required'],
+          trim: true,
+        },
+        message: {
+          type: String,
+          required: [true, 'Notification message is required'],
+          trim: true,
+        },
+        link: {
+          type: String,
+          default: null,
+        },
+        isRead: {
+          type: Boolean,
+          default: false,
+        },
+        createdAt: {
+          type: Date,
+          default: Date.now,
+        },
+      },
+    ],
   },
   {
     timestamps: true, // Adds createdAt and updatedAt

@@ -131,7 +131,7 @@
   cursor: pointer;
 }
 
-.notification-btn > span:not(.dashboard-icon) {
+.notification-badge {
   position: absolute;
   top: 0;
   right: 0;
@@ -144,6 +144,119 @@
   color: #ffffff;
   font-size: 0.72rem;
   font-weight: 800;
+  padding: 0 6px;
+}
+
+.notification-panel {
+  position: absolute;
+  top: calc(100% + 14px);
+  right: 0;
+  width: min(420px, calc(100vw - 32px));
+  max-height: 480px;
+  padding: 18px;
+  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #ececf2;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.16);
+  z-index: 20;
+}
+
+.notification-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.notification-panel-header strong {
+  font-size: 1rem;
+  color: #111827;
+}
+
+.notification-close-btn {
+  border: 0;
+  background: transparent;
+  color: #6b7280;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-state,
+.notification-error,
+.notification-empty {
+  margin: 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+.notification-error {
+  color: #b91c1c;
+}
+
+.notification-list {
+  display: grid;
+  gap: 12px;
+  max-height: 360px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.notification-row {
+  padding: 14px;
+  border: 1px solid #ececf2;
+  border-radius: 18px;
+  background: #f8f8fb;
+  display: grid;
+  gap: 12px;
+}
+
+.notification-row.unread {
+  background: #eef2ff;
+}
+
+.notification-copy strong {
+  display: block;
+  margin-bottom: 6px;
+  color: #111827;
+  font-size: 0.98rem;
+}
+
+.notification-copy p {
+  margin: 0;
+  color: #475569;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.notification-copy small {
+  color: #6b7280;
+  font-size: 0.82rem;
+}
+
+.notification-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notification-action-btn {
+  border: 0;
+  border-radius: 999px;
+  padding: 8px 12px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.notification-action-btn.danger {
+  background: #fee2e2;
+  color: #b91c1c;
+}
+
+.topbar {
+  position: relative;
 }
 
 .user-menu {
@@ -517,6 +630,178 @@
 
 .company-logo.google {
   color: #4285f4;
+}
+
+@media (max-width: 1100px) {
+  .student-dashboard {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+
+  .dashboard-sidebar {
+    padding: 22px 18px;
+  }
+
+  .dashboard-content {
+    padding: 28px;
+  }
+
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-panels {
+    grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.8fr);
+  }
+}
+
+@media (max-width: 860px) {
+  .student-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-sidebar {
+    position: relative;
+    top: auto;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid #ececf2;
+    background: #ffffff;
+  }
+
+  .dashboard-nav {
+    gap: 10px;
+  }
+
+  .dashboard-sidebar,
+  .dashboard-main {
+    min-width: 0;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    padding: 20px;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    justify-content: space-between;
+    gap: 12px;
+  }
+
+  .user-menu {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .dashboard-content {
+    padding: 24px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .bottom-panels {
+    grid-template-columns: 1fr;
+  }
+
+  .panel {
+    padding: 18px;
+  }
+
+  .trend-chart {
+    grid-template-columns: 28px 1fr;
+  }
+
+  .chart-labels {
+    gap: 5px;
+    font-size: 0.8rem;
+  }
+
+  .opportunity-row,
+  .interview-row {
+    grid-template-columns: 56px minmax(0, 1fr);
+    align-items: flex-start;
+    padding: 12px 0;
+  }
+
+  .opportunity-row .match-pill,
+  .interview-row .date-copy {
+    justify-self: end;
+    margin-top: 8px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 600px) {
+  .dashboard-sidebar {
+    padding: 18px 16px;
+  }
+
+  .topbar {
+    padding: 18px 16px;
+  }
+
+  .welcome-block h2 {
+    font-size: clamp(1.75rem, 7vw, 2rem);
+  }
+
+  .dashboard-content {
+    padding: 18px 16px 24px;
+  }
+
+  .panel {
+    padding: 16px;
+  }
+
+  .stat-card {
+    padding: 18px;
+  }
+
+  .stat-icon {
+    width: 60px;
+    height: 60px;
+  }
+
+  .profile-progress,
+  .skill-track {
+    min-width: 100%;
+  }
+
+  .dashboard-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .nav-item,
+  .sidebar-logout {
+    min-height: 52px;
+    padding: 0 14px;
+  }
+
+  .notification-btn {
+    width: 38px;
+    height: 38px;
+  }
+
+  .avatar {
+    width: 46px;
+    height: 46px;
+  }
+
+  .panel-header {
+    gap: 10px;
+  }
+
+  .panel-header h3 {
+    font-size: 1rem;
+  }
 }
 
 .company-logo.flipkart {

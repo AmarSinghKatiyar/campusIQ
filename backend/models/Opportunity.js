@@ -1,86 +1,133 @@
 const mongoose = require('mongoose');
 
-const opportunitySchema = new mongoose.Schema(
-    {
-        company: {
-            type: String,
-            required: true,
-            trim: true,
-        },
-        companyLogo: String,
-        mode: {
-            type: String,
-            enum: ['Remote', 'Hybrid', 'Onsite'],
-        },
-        status: {
-            type: String,
-            enum: ['Open', 'Closed'],
-            default: 'Open',
-        },
-        postedBy: {
-            type: mongoose.Schema.Types.ObjectId,
-            ref: 'Admin',
-        },
-        title: {
-            type: String,
-            required: true,
-            trim: true,
-        },
+const Schema = mongoose.Schema;
 
-        description: {
-            type: String,
-            required: true,
-        },
-
-        location: {
-            type: String,
-            required: true,
-        },
-
-        type: {
-            type: String,
-            enum: ['Internship', 'Full Time'],
-            required: true,
-        },
-
-        stipend: {
-            type: String,
-            default: '',
-        },
-
-        deadline: {
-            type: Date,
-            required: true,
-        },
-
-        eligibleBranches: [
-            {
-                type: String,
-                enum: ['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE'],
-            },
-        ],
-
-        minimumCGPA: {
-            type: Number,
-            default: 0,
-            min: 0,
-            max: 10,
-        },
-
-        skillsRequired: [
-            {
-                type: String,
-            },
-        ],
-
-        isActive: {
-            type: Boolean,
-            default: true,
-        },
+const opportunitySchema = new Schema(
+  {
+    title: {
+      type: String,
+      required: true,
+      trim: true,
     },
-    {
-        timestamps: true,
-    }
+
+    company: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    companyLogo: {
+      type: String,
+      default: '',
+    },
+
+    description: {
+      type: String,
+      required: true,
+    },
+
+    type: {
+      type: String,
+      enum: ['Internship', 'Full-time', 'Part-time', 'Full Time'],
+      required: true,
+    },
+
+    mode: {
+      type: String,
+      enum: ['Remote', 'Hybrid', 'Onsite'],
+      default: 'Remote',
+    },
+
+    location: {
+      type: String,
+      default: 'Remote',
+    },
+
+    status: {
+      type: String,
+      enum: ['Open', 'Closed'],
+      default: 'Open',
+    },
+
+    stipend: {
+      amount: Number,
+      currency: {
+        type: String,
+        default: 'INR',
+      },
+      period: {
+        type: String,
+        enum: ['per-month', 'lump-sum'],
+        default: 'per-month',
+      },
+    },
+
+    requiredSkills: [
+      {
+        type: String,
+        trim: true,
+      },
+    ],
+
+    skillsRequired: [
+      {
+        type: String,
+      },
+    ],
+
+    eligibility: {
+      cgpa: {
+        type: Number,
+        min: 0,
+        max: 10,
+      },
+      branches: [String],
+      graduationYears: [Number],
+    },
+
+    minimumCGPA: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 10,
+    },
+
+    eligibleBranches: [
+      {
+        type: String,
+        enum: ['CSE', 'IT', 'ECE', 'EE', 'ME', 'CE'],
+      },
+    ],
+
+    applyBy: {
+      type: Date,
+    },
+
+    deadline: {
+      type: Date,
+    },
+
+    isActive: {
+      type: Boolean,
+      default: true,
+    },
+
+    postedBy: {
+      type: Schema.Types.ObjectId,
+      ref: 'Admin',
+      required: true,
+    },
+
+    applicants: [
+      {
+        type: Schema.Types.ObjectId,
+        ref: 'Student',
+      },
+    ],
+  },
+  {
+    timestamps: true,
+  }
 );
 
 module.exports = mongoose.model('Opportunity', opportunitySchema);
