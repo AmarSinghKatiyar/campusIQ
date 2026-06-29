@@ -1,5 +1,4 @@
 const Opportunity = require('../models/Opportunity');
-<<<<<<< HEAD
 const Student = require('../models/Student');
 
 /**
@@ -21,29 +20,10 @@ exports.getAllOpportunities = async (req, res) => {
 
     res.status(200).json({
       success: true,
-=======
-
-/**
- * Get all active opportunities
- * Route: GET /api/opportunities
- */
-exports.getAllOpportunities = async (req, res) => {
-  try {
-    const opportunities = await Opportunity.find({
-      isActive: true,
-    }).sort({
-      deadline: 1,
-    });
-
-    res.status(200).json({
-      success: true,
-      message: 'Opportunities fetched successfully',
->>>>>>> 2c05d62b9f8e0fd727b227128ca5915d840d4fe5
       count: opportunities.length,
       data: opportunities,
     });
   } catch (error) {
-<<<<<<< HEAD
     res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };
@@ -154,13 +134,5 @@ exports.applyToOpportunity = async (req, res) => {
     res.status(200).json({ success: true, message: 'Successfully applied to opportunity' });
   } catch (error) {
     res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
-=======
-    console.error('Error fetching opportunities:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Error fetching opportunities',
-    });
->>>>>>> 2c05d62b9f8e0fd727b227128ca5915d840d4fe5
   }
 };

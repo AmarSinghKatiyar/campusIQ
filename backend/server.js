@@ -1,6 +1,9 @@
 const app = require('./src/app');
 const connectDB = require('./config/db');
 const { verifyCloudinaryConfig } = require('./config/cloudinary');
+const dns = require("node:dns");
+
+dns.setServers(["1.1.1.1", "8.8.8.8"]);
 require('dotenv').config();
 
 // Port configuration
