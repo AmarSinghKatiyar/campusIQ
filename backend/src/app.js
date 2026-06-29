@@ -47,6 +47,7 @@ app.use('/api/opportunities', opportunityRoutes);
 // Student routes (all protected)
 app.use('/api/students', studentRoutes);
 
+
 /**
  * Health check endpoint
  */
