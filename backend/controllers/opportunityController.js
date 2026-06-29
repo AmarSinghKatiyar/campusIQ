@@ -8,29 +8,23 @@ const Student = require('../models/Student');
  */
 
 /**
- * Get all active opportunities
- * Route: GET /api/opportunities
+ * Get all opportunities (for students)
+ * @route   GET /api/opportunities
+ * @access  Protected
  */
 exports.getAllOpportunities = async (req, res) => {
   try {
-    const opportunities = await Opportunity.find({
-      isActive: true,
-    }).sort({
-      deadline: 1,
-    });
+    const opportunities = await Opportunity.find({ applyBy: { $gte: new Date() } })
+      .populate('postedBy', 'name')
+      .sort({ createdAt: -1 });
 
     res.status(200).json({
       success: true,
-      message: 'Opportunities fetched successfully',
       count: opportunities.length,
       data: opportunities,
     });
   } catch (error) {
-    console.error('Error fetching opportunities:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Server Error: ' + error.message,
-    });
+    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };
 
@@ -191,11 +185,6 @@ exports.applyToOpportunity = async (req, res) => {
       message: 'Successfully applied to opportunity',
     });
   } catch (error) {
-    console.error('Error applying to opportunity:', error);
-
-    res.status(500).json({
-      success: false,
-      message: 'Server Error: ' + error.message,
-    });
+    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };

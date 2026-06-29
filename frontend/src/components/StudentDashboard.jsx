@@ -65,6 +65,10 @@ export default function StudentDashboard() {
   const [range, setRange] = useState('This Month')
   const [notice, setNotice] = useState('')
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false)
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false)
+
+  const userMenuButtonRef = useRef(null)
+  const userMenuRef = useRef(null)
   const notificationsButtonRef = useRef(null)
   const notificationPanelRef = useRef(null)
 
@@ -90,11 +94,20 @@ export default function StudentDashboard() {
       ) {
         setIsNotificationsOpen(false)
       }
+      if (
+        isUserMenuOpen &&
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target) &&
+        userMenuButtonRef.current &&
+        !userMenuButtonRef.current.contains(event.target)
+      ) {
+        setIsUserMenuOpen(false)
+      }
     }
 
     window.addEventListener('mousedown', handleOutsideClick)
     return () => window.removeEventListener('mousedown', handleOutsideClick)
-  }, [isNotificationsOpen])
+  }, [isNotificationsOpen, isUserMenuOpen])
 
   const handleToggleNotifications = () => {
     setIsNotificationsOpen((open) => !open)
@@ -342,91 +355,129 @@ export default function StudentDashboard() {
               ref={notificationsButtonRef}
             >
               <DashboardIcon name="bell" />
-              {unreadCount > 0 ? <span className="notification-badge">{unreadCount}</span> : null}
+              {unreadCount > 0 ? (
+                <span className="notification-badge">{unreadCount}</span>
+              ) : null}
             </button>
 
-            <button
-              className="user-menu"
-              type="button"
-              onClick={() => setActiveView('profile')}
-            >
-              <span className="avatar">{initials}</span>
-              <span className="user-summary">
-                <strong>{user?.name || 'Student User'}</strong>
-                <small>{[user?.year, user?.branch].filter(Boolean).join(', ') || 'Student'}</small>
-              </span>
-              <DashboardIcon name="chevron" />
-            </button>
-          </div>
+            <div className="user-menu-wrapper">
+              <button
+                className="user-menu"
+                type="button"
+                ref={userMenuButtonRef}
+                onClick={() => setIsUserMenuOpen((open) => !open)}
+              >
+                <span className="avatar">{initials}</span>
 
-          {isNotificationsOpen ? (
-            <div
-              className="notification-panel"
-              ref={notificationPanelRef}
-              role="dialog"
-              aria-label="Notifications"
-            >
-              <div className="notification-panel-header">
-                <strong>Notifications</strong>
-                <button
-                  type="button"
-                  className="notification-close-btn"
-                  onClick={() => setIsNotificationsOpen(false)}
-                >
-                  Close
-                </button>
-              </div>
+                <span className="user-summary">
+                  <strong>{user?.name || "Student User"}</strong>
+                  <small>
+                    {[user?.year, user?.branch].filter(Boolean).join(", ") || "Student"}
+                  </small>
+                </span>
 
-              {notificationsStatus === 'loading' ? (
-                <p className="notification-state">Loading notifications...</p>
-              ) : notificationsError ? (
-                <p className="notification-error">{notificationsError}</p>
-              ) : notifications.length === 0 ? (
-                <p className="notification-empty">No notifications yet.</p>
-              ) : (
-                <div className="notification-list">
-                  {notifications.map((notification) => (
-                    <div
-                      key={notification._id}
-                      className={`notification-row ${notification.isRead ? '' : 'unread'}`}
-                    >
-                      <div className="notification-copy">
-                        <strong>{notification.title}</strong>
-                        <p>{notification.message}</p>
-                        <small>{new Date(notification.createdAt).toLocaleString()}</small>
-                      </div>
-                      <div className="notification-actions">
-                        {!notification.isRead ? (
-                          <button
-                            type="button"
-                            className="notification-action-btn"
-                            onClick={(event) => {
-                              event.stopPropagation()
-                              handleMarkNotificationRead(notification._id)
-                            }}
-                          >
-                            Mark read
-                          </button>
-                        ) : null}
-                        <button
-                          type="button"
-                          className="notification-action-btn danger"
-                          onClick={(event) => {
-                            event.stopPropagation()
-                            handleDeleteNotification(notification._id)
-                          }}
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  ))}
+                <DashboardIcon name="chevron" />
+              </button>
+
+              {isUserMenuOpen && (
+                <div className="user-dropdown" ref={userMenuRef}>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setActiveView("profile")
+                      setIsUserMenuOpen(false)
+                    }}
+                  >
+                    Profile
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      dispatch(logout())
+                      setIsUserMenuOpen(false)
+                    }}
+                  >
+                    Logout
+                  </button>
                 </div>
               )}
             </div>
-          ) : null}
-        </header>
 
+            {isNotificationsOpen && (
+              <div
+                className="notification-panel"
+                ref={notificationPanelRef}
+                role="dialog"
+                aria-label="Notifications"
+              >
+                <div className="notification-panel-header">
+                  <strong>Notifications</strong>
+
+                  <button
+                    type="button"
+                    className="notification-close-btn"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                {notificationsStatus === "loading" ? (
+                  <p className="notification-state">Loading notifications...</p>
+                ) : notificationsError ? (
+                  <p className="notification-error">{notificationsError}</p>
+                ) : notifications.length === 0 ? (
+                  <p className="notification-empty">No notifications yet.</p>
+                ) : (
+                  <div className="notification-list">
+                    {notifications.map((notification) => (
+                      <div
+                        key={notification._id}
+                        className={`notification-row ${notification.isRead ? "" : "unread"
+                          }`}
+                      >
+                        <div className="notification-copy">
+                          <strong>{notification.title}</strong>
+                          <p>{notification.message}</p>
+                          <small>
+                            {new Date(notification.createdAt).toLocaleString()}
+                          </small>
+                        </div>
+
+                        <div className="notification-actions">
+                          {!notification.isRead && (
+                            <button
+                              type="button"
+                              className="notification-action-btn"
+                              onClick={(event) => {
+                                event.stopPropagation()
+                                handleMarkNotificationRead(notification._id)
+                              }}
+                            >
+                              Mark read
+                            </button>
+                          )}
+
+                          <button
+                            type="button"
+                            className="notification-action-btn danger"
+                            onClick={(event) => {
+                              event.stopPropagation()
+                              handleDeleteNotification(notification._id)
+                            }}
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </header>
         <section className="dashboard-content">{renderActiveView()}</section>
       </main>
     </div>

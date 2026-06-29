@@ -38,10 +38,7 @@ const Sidebar = ({ activeView, onNavigate, onLogout }) => {
         ))}
       </nav>
 
-      <button className="sidebar-logout" type="button" onClick={onLogout}>
-        <DashboardIcon name="logout" />
-        <span>Logout</span>
-      </button>
+      
     </aside>
   );
 };
