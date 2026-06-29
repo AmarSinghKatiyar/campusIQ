@@ -1,54 +1,176 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Search,
-  SlidersHorizontal,
   Download,
   Plus,
   ChevronLeft,
   ChevronRight,
   MoreVertical,
   X,
+  Loader2,
+  Trash2,
 } from "lucide-react";
-
-// ---- Mock data — swap for your real API/backend call ----
-const STUDENTS = [
-  { id: "MPEC23CS001", name: "Aarav Sharma", branch: "CSE", batch: "2027", cgpa: 8.9, leetcode: 412, readiness: 87, status: "Placed" },
-  { id: "MPEC23CS014", name: "Ishita Verma", branch: "CSE (AI)", batch: "2027", cgpa: 9.2, leetcode: 530, readiness: 94, status: "Eligible" },
-  { id: "MPEC23IT007", name: "Rohan Gupta", branch: "IT", batch: "2027", cgpa: 7.4, leetcode: 120, readiness: 58, status: "Not Eligible" },
-  { id: "MPEC23CS022", name: "Sneha Pillai", branch: "CSE", batch: "2027", cgpa: 8.1, leetcode: 287, readiness: 76, status: "Eligible" },
-  { id: "MPEC23EC009", name: "Karan Mehta", branch: "ECE", batch: "2027", cgpa: 6.9, leetcode: 64, readiness: 41, status: "Not Eligible" },
-  { id: "MPEC23CS031", name: "Priya Nair", branch: "CSE (AI)", batch: "2027", cgpa: 9.5, leetcode: 601, readiness: 97, status: "Placed" },
-  { id: "MPEC23ME004", name: "Devansh Joshi", branch: "ME", batch: "2027", cgpa: 7.8, leetcode: 95, readiness: 62, status: "Eligible" },
-  { id: "MPEC23CS018", name: "Ananya Singh", branch: "CSE", batch: "2027", cgpa: 8.6, leetcode: 349, readiness: 81, status: "Eligible" },
-];
+import { api } from "../lib/api";
 
 const STATUS_STYLES = {
   Placed: "bg-[color-mix(in_oklab,var(--accent)_16%,white)] text-[var(--accent)]",
-  Eligible: "bg-secondary text-secondary-foreground",
-  "Not Eligible": "bg-[color-mix(in_oklab,var(--destructive)_12%,white)] text-[var(--destructive)]",
+  "In-Progress": "bg-secondary text-secondary-foreground",
+  Unplaced: "bg-[color-mix(in_oklab,var(--destructive)_12%,white)] text-[var(--destructive)]",
 };
 
-function initials(name) {
-  return name
-    .split(" ")
-    .map((p) => p[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+const BRANCHES = [
+  "Computer Science",
+  "Computer Science (AI)",
+  "Information Technology",
+  "Electronics",
+  "Mechanical",
+  "Civil",
+  "Electrical",
+];
+
+function initials(name = "") {
+  return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
-function ReadinessBar({ value }) {
+function ReadinessBar({ value = 0 }) {
   const color =
     value >= 80 ? "var(--accent)" : value >= 60 ? "var(--chart-4)" : "var(--destructive)";
   return (
     <div className="flex items-center gap-2 w-32">
       <div className="h-1.5 flex-1 rounded-full bg-muted overflow-hidden">
-        <div
-          className="h-full rounded-full"
-          style={{ width: `${value}%`, backgroundColor: color }}
-        />
+        <div className="h-full rounded-full" style={{ width: `${value}%`, backgroundColor: color }} />
       </div>
       <span className="text-sm tabular-nums text-muted-foreground w-8">{value}</span>
+    </div>
+  );
+}
+
+function emptyForm() {
+  return { name: "", email: "", rollNumber: "", branch: BRANCHES[0], cgpa: "", batch: "" };
+}
+
+function AddStudentModal({ onClose, onCreated }) {
+  const [form, setForm] = useState(emptyForm());
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
+
+  function update(field, value) {
+    setForm((f) => ({ ...f, [field]: value }));
+  }
+
+  async function submit(e) {
+    e.preventDefault();
+    setSaving(true);
+    setError("");
+    try {
+      await api.post("/students", {
+        ...form,
+        cgpa: parseFloat(form.cgpa),
+        batch: parseInt(form.batch, 10),
+      });
+      onCreated();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-lg rounded-xl border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-foreground">Add student</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground">
+            <X className="size-4" />
+          </button>
+        </div>
+
+        <form onSubmit={submit} className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Full name</label>
+              <input
+                required
+                value={form.name}
+                onChange={(e) => update("name", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Roll number</label>
+              <input
+                required
+                value={form.rollNumber}
+                onChange={(e) => update("rollNumber", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div className="sm:col-span-2">
+              <label className="text-sm text-muted-foreground mb-1.5 block">Email</label>
+              <input
+                required
+                type="email"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Branch</label>
+              <select
+                value={form.branch}
+                onChange={(e) => update("branch", e.target.value)}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              >
+                {BRANCHES.map((b) => (
+                  <option key={b} value={b}>{b}</option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Batch year</label>
+              <input
+                required
+                type="number"
+                value={form.batch}
+                onChange={(e) => update("batch", e.target.value)}
+                placeholder="2027"
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">CGPA</label>
+              <input
+                required
+                type="number"
+                step="0.01"
+                min="0"
+                max="10"
+                value={form.cgpa}
+                onChange={(e) => update("cgpa", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+          </div>
+
+          {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
+
+          <div className="flex items-center justify-end gap-2">
+            <button type="button" onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={saving}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-60"
+            >
+              {saving && <Loader2 className="size-4 animate-spin" />}
+              Add student
+            </button>
+          </div>
+        </form>
+      </div>
     </div>
   );
 }
@@ -56,45 +178,71 @@ function ReadinessBar({ value }) {
 const PAGE_SIZE = 6;
 
 export function StudentsPage() {
+  const [students, setStudents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("All");
   const [branchFilter, setBranchFilter] = useState("All");
   const [page, setPage] = useState(1);
   const [selected, setSelected] = useState([]);
+  const [showAdd, setShowAdd] = useState(false);
 
-  const branches = useMemo(
-    () => ["All", ...Array.from(new Set(STUDENTS.map((s) => s.branch)))],
-    []
-  );
-  const statuses = ["All", "Placed", "Eligible", "Not Eligible"];
+  async function loadStudents() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await api.get("/students", {
+        search: query || undefined,
+        status: statusFilter !== "All" ? statusFilter : undefined,
+        branch: branchFilter !== "All" ? branchFilter : undefined,
+      });
+      setStudents(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  }
 
-  const filtered = useMemo(() => {
-    return STUDENTS.filter((s) => {
-      const matchesQuery =
-        s.name.toLowerCase().includes(query.toLowerCase()) ||
-        s.id.toLowerCase().includes(query.toLowerCase());
-      const matchesStatus = statusFilter === "All" || s.status === statusFilter;
-      const matchesBranch = branchFilter === "All" || s.branch === branchFilter;
-      return matchesQuery && matchesStatus && matchesBranch;
-    });
+  useEffect(() => {
+    const t = setTimeout(loadStudents, 300); // debounce search
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query, statusFilter, branchFilter]);
 
-  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageItems = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const branches = useMemo(
+    () => ["All", ...Array.from(new Set(students.map((s) => s.branch)))],
+    [students]
+  );
+  const statuses = ["All", "Placed", "In-Progress", "Unplaced"];
+
+  const totalPages = Math.max(1, Math.ceil(students.length / PAGE_SIZE));
+  const pageItems = students.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
 
   const allOnPageSelected =
-    pageItems.length > 0 && pageItems.every((s) => selected.includes(s.id));
+    pageItems.length > 0 && pageItems.every((s) => selected.includes(s._id));
 
   function toggleAll() {
     if (allOnPageSelected) {
-      setSelected((prev) => prev.filter((id) => !pageItems.some((s) => s.id === id)));
+      setSelected((prev) => prev.filter((id) => !pageItems.some((s) => s._id === id)));
     } else {
-      setSelected((prev) => [...new Set([...prev, ...pageItems.map((s) => s.id)])]);
+      setSelected((prev) => [...new Set([...prev, ...pageItems.map((s) => s._id)])]);
     }
   }
 
   function toggleOne(id) {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  async function removeStudent(id) {
+    if (!confirm("Remove this student? This cannot be undone.")) return;
+    try {
+      await api.del(`/students/${id}`);
+      loadStudents();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
   return (
@@ -104,7 +252,7 @@ export function StudentsPage() {
         <div>
           <h1 className="text-foreground">Students</h1>
           <p className="text-muted-foreground text-sm mt-1">
-            {filtered.length} of {STUDENTS.length} students · readiness scores update nightly
+            {students.length} students · readiness scores computed from CGPA, aptitude, communication & projects
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -112,7 +260,10 @@ export function StudentsPage() {
             <Download className="size-4" />
             Export
           </button>
-          <button className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity">
+          <button
+            onClick={() => setShowAdd(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity"
+          >
             <Plus className="size-4" />
             Add student
           </button>
@@ -143,9 +294,7 @@ export function StudentsPage() {
           className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
         >
           {branches.map((b) => (
-            <option key={b} value={b}>
-              {b === "All" ? "All branches" : b}
-            </option>
+            <option key={b} value={b}>{b === "All" ? "All branches" : b}</option>
           ))}
         </select>
 
@@ -158,9 +307,7 @@ export function StudentsPage() {
                 setPage(1);
               }}
               className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                statusFilter === s
-                  ? "bg-primary text-primary-foreground"
-                  : "text-muted-foreground hover:text-foreground"
+                statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
               {s}
@@ -191,15 +338,16 @@ export function StudentsPage() {
           <div className="flex items-center gap-3">
             <button className="hover:underline">Email</button>
             <button className="hover:underline">Export selected</button>
-            <button onClick={() => setSelected([])} className="hover:underline">
-              Clear
-            </button>
+            <button onClick={() => setSelected([])} className="hover:underline">Clear</button>
           </div>
         </div>
       )}
 
       {/* Table */}
       <div className="rounded-xl border border-border bg-card overflow-hidden">
+        {error && (
+          <div className="px-4 py-3 text-sm text-[var(--destructive)] border-b border-border">{error}</div>
+        )}
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
@@ -222,16 +370,22 @@ export function StudentsPage() {
               </tr>
             </thead>
             <tbody>
-              {pageItems.map((s) => (
-                <tr
-                  key={s.id}
-                  className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors"
-                >
+              {loading && (
+                <tr>
+                  <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
+                    <Loader2 className="size-4 animate-spin inline mr-2" />
+                    Loading students…
+                  </td>
+                </tr>
+              )}
+
+              {!loading && pageItems.map((s) => (
+                <tr key={s._id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <input
                       type="checkbox"
-                      checked={selected.includes(s.id)}
-                      onChange={() => toggleOne(s.id)}
+                      checked={selected.includes(s._id)}
+                      onChange={() => toggleOne(s._id)}
                       className="size-4 rounded accent-[var(--primary)]"
                     />
                   </td>
@@ -242,32 +396,28 @@ export function StudentsPage() {
                       </div>
                       <div>
                         <div className="text-foreground font-medium">{s.name}</div>
-                        <div className="text-muted-foreground text-xs">{s.id}</div>
+                        <div className="text-muted-foreground text-xs">{s.rollNumber}</div>
                       </div>
                     </div>
                   </td>
                   <td className="px-4 py-3 text-foreground">{s.branch}</td>
-                  <td className="px-4 py-3 text-foreground tabular-nums">{s.cgpa.toFixed(1)}</td>
-                  <td className="px-4 py-3 text-foreground tabular-nums">{s.leetcode}</td>
+                  <td className="px-4 py-3 text-foreground tabular-nums">{s.cgpa?.toFixed(1)}</td>
+                  <td className="px-4 py-3 text-foreground tabular-nums">{s.leetcode ?? 0}</td>
+                  <td className="px-4 py-3"><ReadinessBar value={s.readiness} /></td>
                   <td className="px-4 py-3">
-                    <ReadinessBar value={s.readiness} />
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[s.status]}`}
-                    >
-                      {s.status}
+                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[s.placementStatus]}`}>
+                      {s.placementStatus}
                     </span>
                   </td>
                   <td className="px-4 py-3 text-right">
-                    <button className="text-muted-foreground hover:text-foreground">
-                      <MoreVertical className="size-4" />
+                    <button onClick={() => removeStudent(s._id)} className="text-muted-foreground hover:text-[var(--destructive)]">
+                      <Trash2 className="size-4" />
                     </button>
                   </td>
                 </tr>
               ))}
 
-              {pageItems.length === 0 && (
+              {!loading && pageItems.length === 0 && (
                 <tr>
                   <td colSpan={8} className="px-4 py-10 text-center text-muted-foreground">
                     No students match these filters.
@@ -280,9 +430,7 @@ export function StudentsPage() {
 
         {/* Pagination */}
         <div className="flex items-center justify-between px-4 py-3 border-t border-border">
-          <span className="text-xs text-muted-foreground">
-            Page {page} of {totalPages}
-          </span>
+          <span className="text-xs text-muted-foreground">Page {page} of {totalPages}</span>
           <div className="flex items-center gap-1">
             <button
               onClick={() => setPage((p) => Math.max(1, p - 1))}
@@ -301,6 +449,16 @@ export function StudentsPage() {
           </div>
         </div>
       </div>
+
+      {showAdd && (
+        <AddStudentModal
+          onClose={() => setShowAdd(false)}
+          onCreated={() => {
+            setShowAdd(false);
+            loadStudents();
+          }}
+        />
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
   Plus,
@@ -12,81 +12,10 @@ import {
   ChevronLeft,
   ExternalLink,
   Trash2,
+  Loader2,
+  UserPlus,
 } from "lucide-react";
-
-// ---- Mock data — swap for your real API/backend call ----
-const INITIAL_DRIVES = [
-  {
-    id: "d1",
-    company: "Microsoft",
-    role: "Software Engineer Intern",
-    link: "https://careers.microsoft.com/students/us/en/job/1234",
-    description: "Work on cloud infrastructure teams. DSA-heavy interview process across 3 rounds.",
-    package: "₹1,10,000/mo",
-    location: "Hyderabad",
-    eligibleBranches: ["CSE", "CSE (AI)", "IT"],
-    minCgpa: 7.5,
-    deadline: "2026-07-15",
-    status: "Published",
-  },
-  {
-    id: "d2",
-    company: "Razorpay",
-    role: "Backend Developer",
-    link: "https://razorpay.com/jobs/backend-dev",
-    description: "Full-time role on the payments core team. Node.js/Go, system design round included.",
-    package: "₹18 LPA",
-    location: "Bengaluru",
-    eligibleBranches: ["CSE", "CSE (AI)", "IT", "ECE"],
-    minCgpa: 7.0,
-    deadline: "2026-07-08",
-    status: "Published",
-  },
-  {
-    id: "d3",
-    company: "TCS",
-    role: "Ninja Developer",
-    link: "https://nextstep.tcs.com",
-    description: "Mass recruitment drive, aptitude + technical + HR rounds.",
-    package: "₹3.6 LPA",
-    location: "Pan India",
-    eligibleBranches: ["CSE", "IT", "ECE", "ME"],
-    minCgpa: 6.0,
-    deadline: "2026-06-30",
-    status: "Closed",
-  },
-  {
-    id: "d4",
-    company: "Zoho",
-    role: "Member of Technical Staff",
-    link: "",
-    description: "Draft — waiting on confirmed package details from the company before publishing.",
-    package: "TBD",
-    location: "Chennai",
-    eligibleBranches: ["CSE", "CSE (AI)"],
-    minCgpa: 7.0,
-    deadline: "2026-08-01",
-    status: "Draft",
-  },
-];
-
-const INITIAL_CANDIDATES = {
-  d1: [
-    { id: "MPEC23CS031", name: "Priya Nair", branch: "CSE (AI)", cgpa: 9.5, stage: "Placed" },
-    { id: "MPEC23CS014", name: "Ishita Verma", branch: "CSE (AI)", cgpa: 9.2, stage: "Offered" },
-    { id: "MPEC23CS001", name: "Aarav Sharma", branch: "CSE", cgpa: 8.9, stage: "Interview" },
-    { id: "MPEC23CS018", name: "Ananya Singh", branch: "CSE", cgpa: 8.6, stage: "Shortlisted" },
-    { id: "MPEC23IT007", name: "Rohan Gupta", branch: "IT", cgpa: 7.4, stage: "Applied" },
-  ],
-  d2: [
-    { id: "MPEC23CS022", name: "Sneha Pillai", branch: "CSE", cgpa: 8.1, stage: "Shortlisted" },
-    { id: "MPEC23EC009", name: "Karan Mehta", branch: "ECE", cgpa: 6.9, stage: "Rejected" },
-  ],
-  d3: [
-    { id: "MPEC23ME004", name: "Devansh Joshi", branch: "ME", cgpa: 7.8, stage: "Placed" },
-  ],
-  d4: [],
-};
+import { api } from "../lib/api";
 
 const STAGES = ["Applied", "Shortlisted", "Interview", "Offered", "Placed", "Rejected"];
 
@@ -105,16 +34,24 @@ const DRIVE_STATUS_STYLES = {
   Closed: "bg-[color-mix(in_oklab,var(--destructive)_10%,white)] text-[var(--destructive)]",
 };
 
-const ALL_BRANCHES = ["CSE", "CSE (AI)", "IT", "ECE", "ME"];
+const ALL_BRANCHES = [
+  "Computer Science",
+  "Computer Science (AI)",
+  "Information Technology",
+  "Electronics",
+  "Mechanical",
+  "Civil",
+  "Electrical",
+];
 
-function initials(name) {
+function initials(name = "") {
   return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
 }
 
 function emptyDraft() {
   return {
-    company: "",
-    role: "",
+    companyName: "",
+    jobRole: "",
     link: "",
     description: "",
     package: "",
@@ -125,7 +62,7 @@ function emptyDraft() {
   };
 }
 
-function DriveForm({ onPublish, onSaveDraft, onCancel }) {
+function DriveForm({ onSubmit, onCancel, saving }) {
   const [form, setForm] = useState(emptyDraft());
 
   function update(field, value) {
@@ -141,7 +78,24 @@ function DriveForm({ onPublish, onSaveDraft, onCancel }) {
     }));
   }
 
-  const valid = form.company.trim() && form.role.trim();
+  const valid = form.companyName.trim() && form.jobRole.trim() && form.deadline;
+
+  function buildPayload(status) {
+    return {
+      companyName: form.companyName,
+      jobRole: form.jobRole,
+      link: form.link,
+      description: form.description,
+      package: form.package || "TBD",
+      location: form.location,
+      deadline: form.deadline,
+      status,
+      eligibilityCriteria: {
+        minCGPA: form.minCgpa ? parseFloat(form.minCgpa) : 0,
+        branchesAllowed: form.eligibleBranches,
+      },
+    };
+  }
 
   return (
     <div className="rounded-xl border border-border bg-card p-5 space-y-4">
@@ -156,8 +110,8 @@ function DriveForm({ onPublish, onSaveDraft, onCancel }) {
         <div>
           <label className="text-sm text-muted-foreground mb-1.5 block">Company</label>
           <input
-            value={form.company}
-            onChange={(e) => update("company", e.target.value)}
+            value={form.companyName}
+            onChange={(e) => update("companyName", e.target.value)}
             placeholder="e.g. Microsoft"
             className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
@@ -165,8 +119,8 @@ function DriveForm({ onPublish, onSaveDraft, onCancel }) {
         <div>
           <label className="text-sm text-muted-foreground mb-1.5 block">Role</label>
           <input
-            value={form.role}
-            onChange={(e) => update("role", e.target.value)}
+            value={form.jobRole}
+            onChange={(e) => update("jobRole", e.target.value)}
             placeholder="e.g. Software Engineer Intern"
             className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
@@ -262,24 +216,22 @@ function DriveForm({ onPublish, onSaveDraft, onCancel }) {
       </div>
 
       <div className="flex items-center justify-end gap-2 pt-2 border-t border-border">
-        <button
-          onClick={onCancel}
-          className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
-        >
+        <button onClick={onCancel} className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
           Cancel
         </button>
         <button
-          disabled={!valid}
-          onClick={() => onSaveDraft(form)}
+          disabled={!valid || saving}
+          onClick={() => onSubmit(buildPayload("Draft"))}
           className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors disabled:opacity-40"
         >
           Save as draft
         </button>
         <button
-          disabled={!valid}
-          onClick={() => onPublish(form)}
-          className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+          disabled={!valid || saving}
+          onClick={() => onSubmit(buildPayload("Published"))}
+          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
         >
+          {saving && <Loader2 className="size-4 animate-spin" />}
           Publish to students
         </button>
       </div>
@@ -287,23 +239,20 @@ function DriveForm({ onPublish, onSaveDraft, onCancel }) {
   );
 }
 
-function DriveCard({ drive, candidateCount, shortlistedCount, placedCount, onOpen, onDelete }) {
+function DriveCard({ drive, onOpen, onDelete }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-foreground">{drive.company}</h3>
+            <h3 className="text-foreground">{drive.companyName}</h3>
             <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${DRIVE_STATUS_STYLES[drive.status]}`}>
               {drive.status}
             </span>
           </div>
-          <p className="text-muted-foreground text-sm mt-0.5">{drive.role}</p>
+          <p className="text-muted-foreground text-sm mt-0.5">{drive.jobRole}</p>
         </div>
-        <button
-          onClick={() => onDelete(drive.id)}
-          className="text-muted-foreground hover:text-[var(--destructive)] transition-colors"
-        >
+        <button onClick={() => onDelete(drive._id)} className="text-muted-foreground hover:text-[var(--destructive)] transition-colors">
           <Trash2 className="size-4" />
         </button>
       </div>
@@ -311,13 +260,16 @@ function DriveCard({ drive, candidateCount, shortlistedCount, placedCount, onOpe
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
         <span className="inline-flex items-center gap-1"><IndianRupee className="size-3.5" />{drive.package}</span>
         <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{drive.location || "—"}</span>
-        <span className="inline-flex items-center gap-1"><Calendar className="size-3.5" />Deadline {drive.deadline || "—"}</span>
+        <span className="inline-flex items-center gap-1">
+          <Calendar className="size-3.5" />
+          Deadline {drive.deadline ? new Date(drive.deadline).toLocaleDateString() : "—"}
+        </span>
       </div>
 
-      <p className="text-sm text-muted-foreground line-clamp-2">{drive.description}</p>
+      {drive.description && <p className="text-sm text-muted-foreground line-clamp-2">{drive.description}</p>}
 
       <div className="flex flex-wrap gap-1.5">
-        {drive.eligibleBranches.map((b) => (
+        {(drive.eligibilityCriteria?.branchesAllowed || []).map((b) => (
           <span key={b} className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
             {b}
           </span>
@@ -328,29 +280,21 @@ function DriveCard({ drive, candidateCount, shortlistedCount, placedCount, onOpe
         <div className="flex items-center gap-4 text-sm">
           <span className="inline-flex items-center gap-1.5 text-foreground">
             <Users className="size-3.5 text-muted-foreground" />
-            {candidateCount} applied
+            {drive.candidateCount ?? 0} applied
           </span>
           <span className="inline-flex items-center gap-1.5 text-foreground">
             <CheckCircle2 className="size-3.5 text-[var(--accent)]" />
-            {placedCount} placed
+            {drive.placedCount ?? 0} placed
           </span>
         </div>
         <div className="flex items-center gap-3">
           {drive.link && (
-            <a
-              href={drive.link}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground"
-            >
+            <a href={drive.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
               <ExternalLink className="size-3.5" />
               Listing
             </a>
           )}
-          <button
-            onClick={() => onOpen(drive.id)}
-            className="text-sm text-primary hover:underline"
-          >
+          <button onClick={() => onOpen(drive._id)} className="text-sm text-primary hover:underline">
             View candidates →
           </button>
         </div>
@@ -359,7 +303,56 @@ function DriveCard({ drive, candidateCount, shortlistedCount, placedCount, onOpe
   );
 }
 
-function CandidateTable({ drive, candidates, onChangeStage }) {
+function AddCandidateModal({ onClose, onAdd }) {
+  const [students, setStudents] = useState([]);
+  const [studentId, setStudentId] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    api.get("/students").then(setStudents).catch((e) => setError(e.message)).finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+      <div className="w-full max-w-sm rounded-xl border border-border bg-card p-6 space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-foreground">Add candidate</h3>
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground"><X className="size-4" /></button>
+        </div>
+        {loading ? (
+          <div className="flex items-center justify-center py-6 text-muted-foreground"><Loader2 className="size-4 animate-spin" /></div>
+        ) : (
+          <>
+            <select
+              value={studentId}
+              onChange={(e) => setStudentId(e.target.value)}
+              className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            >
+              <option value="">Select a student</option>
+              {students.map((s) => (
+                <option key={s._id} value={s._id}>{s.name} · {s.rollNumber}</option>
+              ))}
+            </select>
+            {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={onClose} className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">Cancel</button>
+              <button
+                disabled={!studentId}
+                onClick={() => onAdd(studentId)}
+                className="rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function CandidateTable({ candidates, onChangeStage }) {
   const counts = STAGES.reduce((acc, s) => {
     acc[s] = candidates.filter((c) => c.stage === s).length;
     return acc;
@@ -388,7 +381,7 @@ function CandidateTable({ drive, candidates, onChangeStage }) {
             </thead>
             <tbody>
               {candidates.map((c) => (
-                <tr key={c.id} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
+                <tr key={c.applicationId} className="border-b border-border last:border-0 hover:bg-muted/50 transition-colors">
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-3">
                       <div className="flex items-center justify-center size-8 rounded-full bg-secondary text-secondary-foreground text-xs font-medium shrink-0">
@@ -401,16 +394,14 @@ function CandidateTable({ drive, candidates, onChangeStage }) {
                     </div>
                   </td>
                   <td className="px-4 py-3 text-foreground">{c.branch}</td>
-                  <td className="px-4 py-3 text-foreground tabular-nums">{c.cgpa.toFixed(1)}</td>
+                  <td className="px-4 py-3 text-foreground tabular-nums">{c.cgpa?.toFixed(1)}</td>
                   <td className="px-4 py-3">
                     <select
                       value={c.stage}
-                      onChange={(e) => onChangeStage(drive.id, c.id, e.target.value)}
+                      onChange={(e) => onChangeStage(c.applicationId, e.target.value)}
                       className={`rounded-md border-0 px-2.5 py-1 text-xs font-medium outline-none focus:ring-2 focus:ring-ring ${STAGE_STYLES[c.stage]}`}
                     >
-                      {STAGES.map((s) => (
-                        <option key={s} value={s}>{s}</option>
-                      ))}
+                      {STAGES.map((s) => <option key={s} value={s}>{s}</option>)}
                     </select>
                   </td>
                 </tr>
@@ -432,67 +423,138 @@ function CandidateTable({ drive, candidates, onChangeStage }) {
 }
 
 export function PlacementsPage() {
-  const [drives, setDrives] = useState(INITIAL_DRIVES);
-  const [candidatesByDrive, setCandidatesByDrive] = useState(INITIAL_CANDIDATES);
+  const [drives, setDrives] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const [showForm, setShowForm] = useState(false);
+  const [savingDrive, setSavingDrive] = useState(false);
   const [openDriveId, setOpenDriveId] = useState(null);
+  const [candidates, setCandidates] = useState([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [showAddCandidate, setShowAddCandidate] = useState(false);
   const [filter, setFilter] = useState("All");
 
   const filters = ["All", "Published", "Draft", "Closed"];
 
-  const filteredDrives = useMemo(
-    () => drives.filter((d) => filter === "All" || d.status === filter),
-    [drives, filter]
-  );
-
-  function addDrive(form, status) {
-    const id = `d${Date.now()}`;
-    setDrives((prev) => [{ id, ...form, status }, ...prev]);
-    setCandidatesByDrive((prev) => ({ ...prev, [id]: [] }));
-    setShowForm(false);
+  async function loadDrives() {
+    setLoading(true);
+    setError("");
+    try {
+      const data = await api.get("/placements", { status: filter !== "All" ? filter : undefined });
+      setDrives(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
   }
 
-  function deleteDrive(id) {
-    setDrives((prev) => prev.filter((d) => d.id !== id));
-    if (openDriveId === id) setOpenDriveId(null);
+  useEffect(() => {
+    loadDrives();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter]);
+
+  async function createDrive(payload) {
+    setSavingDrive(true);
+    try {
+      await api.post("/placements", payload);
+      setShowForm(false);
+      loadDrives();
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setSavingDrive(false);
+    }
   }
 
-  function changeStage(driveId, studentId, stage) {
-    setCandidatesByDrive((prev) => ({
-      ...prev,
-      [driveId]: prev[driveId].map((c) => (c.id === studentId ? { ...c, stage } : c)),
-    }));
+  async function deleteDrive(id) {
+    if (!confirm("Delete this drive and all its applications?")) return;
+    try {
+      await api.del(`/placements/${id}`);
+      if (openDriveId === id) setOpenDriveId(null);
+      loadDrives();
+    } catch (err) {
+      alert(err.message);
+    }
   }
 
-  const openDrive = drives.find((d) => d.id === openDriveId);
+  async function loadCandidates(driveId) {
+    setCandidatesLoading(true);
+    try {
+      const data = await api.get(`/placements/${driveId}/applications`);
+      setCandidates(data);
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCandidatesLoading(false);
+    }
+  }
+
+  function openDrive(id) {
+    setOpenDriveId(id);
+    loadCandidates(id);
+  }
+
+  async function changeStage(applicationId, stage) {
+    try {
+      await api.put(`/placements/${openDriveId}/applications/${applicationId}`, { stage });
+      loadCandidates(openDriveId);
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function addCandidate(studentId) {
+    try {
+      await api.post(`/placements/${openDriveId}/applications`, { studentId });
+      setShowAddCandidate(false);
+      loadCandidates(openDriveId);
+      loadDrives();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  const drive = drives.find((d) => d._id === openDriveId);
 
   // ---- Candidate detail view ----
-  if (openDrive) {
-    const candidates = candidatesByDrive[openDrive.id] || [];
+  if (openDriveId && drive) {
     return (
       <div className="p-6 lg:p-8 space-y-6">
-        <button
-          onClick={() => setOpenDriveId(null)}
-          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground"
-        >
+        <button onClick={() => setOpenDriveId(null)} className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground">
           <ChevronLeft className="size-4" />
           Back to all drives
         </button>
 
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <h1 className="text-foreground">{openDrive.company} — {openDrive.role}</h1>
+            <h1 className="text-foreground">{drive.companyName} — {drive.jobRole}</h1>
             <p className="text-muted-foreground text-sm mt-1">
               {candidates.length} applicant{candidates.length === 1 ? "" : "s"} ·{" "}
               {candidates.filter((c) => c.stage === "Placed").length} placed
             </p>
           </div>
-          <span className={`inline-flex self-start items-center rounded-full px-2.5 py-1 text-xs font-medium ${DRIVE_STATUS_STYLES[openDrive.status]}`}>
-            {openDrive.status}
-          </span>
+          <div className="flex items-center gap-2">
+            <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${DRIVE_STATUS_STYLES[drive.status]}`}>
+              {drive.status}
+            </span>
+            <button
+              onClick={() => setShowAddCandidate(true)}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-3 py-1.5 text-sm text-primary-foreground hover:opacity-90 transition-opacity"
+            >
+              <UserPlus className="size-3.5" />
+              Add candidate
+            </button>
+          </div>
         </div>
 
-        <CandidateTable drive={openDrive} candidates={candidates} onChangeStage={changeStage} />
+        {candidatesLoading ? (
+          <div className="flex items-center gap-2 text-muted-foreground py-10 justify-center"><Loader2 className="size-4 animate-spin" /> Loading candidates…</div>
+        ) : (
+          <CandidateTable candidates={candidates} onChangeStage={changeStage} />
+        )}
+
+        {showAddCandidate && <AddCandidateModal onClose={() => setShowAddCandidate(false)} onAdd={addCandidate} />}
       </div>
     );
   }
@@ -521,13 +583,7 @@ export function PlacementsPage() {
         )}
       </div>
 
-      {showForm && (
-        <DriveForm
-          onPublish={(form) => addDrive(form, "Published")}
-          onSaveDraft={(form) => addDrive(form, "Draft")}
-          onCancel={() => setShowForm(false)}
-        />
-      )}
+      {showForm && <DriveForm onSubmit={createDrive} onCancel={() => setShowForm(false)} saving={savingDrive} />}
 
       <div className="inline-flex rounded-lg border border-border bg-card p-1">
         {filters.map((f) => (
@@ -543,28 +599,23 @@ export function PlacementsPage() {
         ))}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {filteredDrives.map((drive) => {
-          const candidates = candidatesByDrive[drive.id] || [];
-          return (
-            <DriveCard
-              key={drive.id}
-              drive={drive}
-              candidateCount={candidates.length}
-              shortlistedCount={candidates.filter((c) => c.stage === "Shortlisted").length}
-              placedCount={candidates.filter((c) => c.stage === "Placed").length}
-              onOpen={setOpenDriveId}
-              onDelete={deleteDrive}
-            />
-          );
-        })}
+      {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
 
-        {filteredDrives.length === 0 && (
-          <div className="lg:col-span-2 rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
-            No drives match this filter.
-          </div>
-        )}
-      </div>
+      {loading ? (
+        <div className="flex items-center gap-2 text-muted-foreground py-10 justify-center"><Loader2 className="size-4 animate-spin" /> Loading drives…</div>
+      ) : (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {drives.map((d) => (
+            <DriveCard key={d._id} drive={d} onOpen={openDrive} onDelete={deleteDrive} />
+          ))}
+
+          {drives.length === 0 && (
+            <div className="lg:col-span-2 rounded-xl border border-dashed border-border bg-card p-10 text-center text-muted-foreground">
+              No drives match this filter.
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }

@@ -1,4 +1,4 @@
-const STORAGE_KEY = 'campusiq_token';
+const STORAGE_KEY = 'token';
 const ADMIN_KEY = 'campusiq_admin';
 
 export const authService = {
