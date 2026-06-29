@@ -6,6 +6,7 @@ require('dotenv').config();
 // Import routes
 const studentRoutes = require('../routes/studentRoutes');
 const authRoutes = require('../routes/authRoutes');
+const opportunityRoutes = require('../routes/opportunityRoutes');
 
 // Initialize Express app
 const app = express();
@@ -39,6 +40,8 @@ app.use('/api/auth', authRoutes);
 // Student routes (all protected)
 app.use('/api/students', studentRoutes);
 
+// Opportunity Routes
+app.use('/api/opportunities', opportunityRoutes);
 /**
  * Health check endpoint
  */
