@@ -3,14 +3,14 @@ import { createSlice } from '@reduxjs/toolkit'
 const STORAGE_KEY = 'campusIQ-auth'
 
 const loadPersistedState = () => {
-  if (typeof window === 'undefined') {
-    return null
-  }
+  if (typeof window === 'undefined') return null
 
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return null
+
     const parsed = JSON.parse(raw)
+
     return {
       ...parsed,
       status: 'idle',
@@ -22,9 +22,7 @@ const loadPersistedState = () => {
 }
 
 const savePersistedState = (state) => {
-  if (typeof window === 'undefined') {
-    return
-  }
+  if (typeof window === 'undefined') return
 
   const persisted = {
     registeredUsers: state.registeredUsers,
@@ -44,7 +42,10 @@ const savePersistedState = (state) => {
           linkedinUrl: state.user.linkedinUrl,
           skills: state.user.skills,
           resumeUrl: state.user.resumeUrl,
+<<<<<<< HEAD
           placementStatus: state.user.placementStatus,
+=======
+>>>>>>> ff6bd1a9cec7cdcf8bc887572328cf66de6139fd
           securityPreferences: state.user.securityPreferences,
         }
       : null,
@@ -70,33 +71,39 @@ const authSlice = createSlice({
       state.status = 'loading'
       state.error = null
     },
+
     authSuccess(state, action) {
       state.status = 'succeeded'
       state.user = action.payload
       state.error = null
       savePersistedState(state)
     },
+
     authFailure(state, action) {
       state.status = 'failed'
       state.error = action.payload
       state.user = null
     },
+
     logout(state) {
       state.user = null
       state.status = 'idle'
       state.error = null
       savePersistedState(state)
     },
+
     clearAuthError(state) {
       state.error = null
       if (state.status === 'failed') {
         state.status = 'idle'
       }
     },
+
     registerUser(state, action) {
       state.registeredUsers.push(action.payload)
       savePersistedState(state)
     },
+
     updateUser(state, action) {
       state.user = {
         ...state.user,
@@ -107,6 +114,14 @@ const authSlice = createSlice({
   },
 })
 
-export const { authStart, authSuccess, authFailure, logout, clearAuthError, registerUser, updateUser } = authSlice.actions
+export const {
+  authStart,
+  authSuccess,
+  authFailure,
+  logout,
+  clearAuthError,
+  registerUser,
+  updateUser,
+} = authSlice.actions
 
 export default authSlice.reducer
