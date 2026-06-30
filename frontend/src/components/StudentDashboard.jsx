@@ -10,6 +10,7 @@ import Sidebar from './Sidebar'
 import OpportunitiesPage from './OpportunitiesPage'
 import AssessmentsPage from './AssessmentsPage'
 import InterviewsPage from "./InterviewsPage";
+import LearningPage from "./Learning";
 import SettingsPage from './SettingsPage'
 import './StudentDashboard.css'
 
@@ -321,6 +322,8 @@ export default function StudentDashboard() {
         return <AssessmentsPage />
       case 'interviews':
         return <InterviewsPage />
+      case "learning":
+        return <LearningPage />;
       case 'settings':
         return <SettingsPage />
       default:

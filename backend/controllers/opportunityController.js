@@ -1,5 +1,5 @@
-const Opportunity = require('../models/Opportunity');
-const Student = require('../models/Student');
+const Opportunity = require("../models/Opportunity");
+const Student = require("../models/Student");
 
 /**
  * ========================================
@@ -9,14 +9,20 @@ const Student = require('../models/Student');
 
 /**
  * Get all opportunities (for students)
- * @route   GET /api/opportunities
- * @access  Protected
+ * @route GET /api/opportunities
+ * @access Protected
  */
 exports.getAllOpportunities = async (req, res) => {
   try {
-    const opportunities = await Opportunity.find({ applyBy: { $gte: new Date() } })
-      .populate('postedBy', 'name')
+    console.log("========== GET ALL OPPORTUNITIES ==========");
+    console.log("Connected Database:", Opportunity.db.name);
+
+    const opportunities = await Opportunity.find({})
+      .populate("postedBy", "name")
       .sort({ createdAt: -1 });
+
+    console.log("Total Opportunities:", opportunities.length);
+    console.log(opportunities);
 
     res.status(200).json({
       success: true,
@@ -24,26 +30,29 @@ exports.getAllOpportunities = async (req, res) => {
       data: opportunities,
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+    console.error("Get Opportunities Error:", error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error: " + error.message,
+    });
   }
 };
 
 /**
- * Get a single opportunity by ID
- * @route GET /api/opportunities/:id
- * @access Protected
+ * Get single opportunity
  */
 exports.getOpportunityById = async (req, res) => {
   try {
     const opportunity = await Opportunity.findById(req.params.id).populate(
-      'postedBy',
-      'name'
+      "postedBy",
+      "name"
     );
 
     if (!opportunity) {
       return res.status(404).json({
         success: false,
-        message: 'Opportunity not found',
+        message: "Opportunity not found",
       });
     }
 
@@ -52,17 +61,17 @@ exports.getOpportunityById = async (req, res) => {
       data: opportunity,
     });
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
       success: false,
-      message: 'Server Error: ' + error.message,
+      message: "Server Error: " + error.message,
     });
   }
 };
 
 /**
- * Create a new opportunity
- * @route POST /api/opportunities
- * @access Admin
+ * Create opportunity
  */
 exports.createOpportunity = async (req, res) => {
   try {
@@ -76,6 +85,8 @@ exports.createOpportunity = async (req, res) => {
       data: opportunity,
     });
   } catch (error) {
+    console.error(error);
+
     res.status(400).json({
       success: false,
       message: error.message,
@@ -84,9 +95,7 @@ exports.createOpportunity = async (req, res) => {
 };
 
 /**
- * Update an opportunity
- * @route PUT /api/opportunities/:id
- * @access Admin
+ * Update opportunity
  */
 exports.updateOpportunity = async (req, res) => {
   try {
@@ -95,7 +104,7 @@ exports.updateOpportunity = async (req, res) => {
     if (!opportunity) {
       return res.status(404).json({
         success: false,
-        message: 'Opportunity not found',
+        message: "Opportunity not found",
       });
     }
 
@@ -113,6 +122,8 @@ exports.updateOpportunity = async (req, res) => {
       data: opportunity,
     });
   } catch (error) {
+    console.error(error);
+
     res.status(400).json({
       success: false,
       message: error.message,
@@ -121,9 +132,7 @@ exports.updateOpportunity = async (req, res) => {
 };
 
 /**
- * Delete an opportunity
- * @route DELETE /api/opportunities/:id
- * @access Admin
+ * Delete opportunity
  */
 exports.deleteOpportunity = async (req, res) => {
   try {
@@ -132,7 +141,7 @@ exports.deleteOpportunity = async (req, res) => {
     if (!opportunity) {
       return res.status(404).json({
         success: false,
-        message: 'Opportunity not found',
+        message: "Opportunity not found",
       });
     }
 
@@ -140,20 +149,20 @@ exports.deleteOpportunity = async (req, res) => {
 
     res.status(200).json({
       success: true,
-      message: 'Opportunity removed',
+      message: "Opportunity removed",
     });
   } catch (error) {
+    console.error(error);
+
     res.status(500).json({
       success: false,
-      message: 'Server Error: ' + error.message,
+      message: "Server Error: " + error.message,
     });
   }
 };
 
 /**
- * Apply to an opportunity
- * @route POST /api/opportunities/:id/apply
- * @access Protected (Student)
+ * Apply to opportunity
  */
 exports.applyToOpportunity = async (req, res) => {
   try {
@@ -162,14 +171,14 @@ exports.applyToOpportunity = async (req, res) => {
     if (!opportunity) {
       return res.status(404).json({
         success: false,
-        message: 'Opportunity not found',
+        message: "Opportunity not found",
       });
     }
 
     if (opportunity.applicants.includes(req.user._id)) {
       return res.status(400).json({
         success: false,
-        message: 'You have already applied for this opportunity',
+        message: "You have already applied for this opportunity",
       });
     }
 
@@ -177,14 +186,22 @@ exports.applyToOpportunity = async (req, res) => {
     await opportunity.save();
 
     const student = await Student.findById(req.user._id);
-    student.applications.push(opportunity._id);
-    await student.save();
+
+    if (student) {
+      student.applications.push(opportunity._id);
+      await student.save();
+    }
 
     res.status(200).json({
       success: true,
-      message: 'Successfully applied to opportunity',
+      message: "Successfully applied to opportunity",
     });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
+    console.error(error);
+
+    res.status(500).json({
+      success: false,
+      message: "Server Error: " + error.message,
+    });
   }
 };
