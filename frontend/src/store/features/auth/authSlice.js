@@ -37,6 +37,13 @@ const savePersistedState = (state) => {
           rollNumber: state.user.rollNumber,
           branch: state.user.branch,
           year: state.user.year,
+          graduationYear: state.user.graduationYear,
+          cgpa: state.user.cgpa,
+          phoneNumber: state.user.phoneNumber,
+          githubUrl: state.user.githubUrl,
+          linkedinUrl: state.user.linkedinUrl,
+          skills: state.user.skills,
+          securityPreferences: state.user.securityPreferences,
         }
       : null,
   }
@@ -88,9 +95,16 @@ const authSlice = createSlice({
       state.registeredUsers.push(action.payload)
       savePersistedState(state)
     },
+    updateUser(state, action) {
+      state.user = {
+        ...state.user,
+        ...action.payload,
+      }
+      savePersistedState(state)
+    },
   },
 })
 
-export const { authStart, authSuccess, authFailure, logout, clearAuthError, registerUser } = authSlice.actions
+export const { authStart, authSuccess, authFailure, logout, clearAuthError, registerUser, updateUser } = authSlice.actions
 
 export default authSlice.reducer

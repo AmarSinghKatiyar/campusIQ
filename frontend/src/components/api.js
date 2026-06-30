@@ -6,7 +6,7 @@ import axios from 'axios';
  */
 const api = axios.create({
   // Use the environment variable for the backend URL, with a fallback for development
-  baseURL: process.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
   // Ensure that cookies are sent with every request
   withCredentials: true,
 });

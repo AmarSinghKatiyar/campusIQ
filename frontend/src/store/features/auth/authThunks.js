@@ -33,6 +33,13 @@ export const loginStudent = ({ email, password }) => async (dispatch) => {
         rollNumber: student.rollNumber,
         branch: student.branch,
         graduationYear: student.graduationYear,
+        year: student.graduationYear,
+        cgpa: student.cgpa,
+        phoneNumber: student.phoneNumber,
+        githubUrl: student.githubUrl,
+        linkedinUrl: student.linkedinUrl,
+        skills: student.skills || [],
+        securityPreferences: student.securityPreferences,
       })
     )
   } catch (error) {
@@ -90,7 +97,14 @@ export const signupStudent = ({
         role: 'student',
         rollNumber: student.rollNumber,
         branch: student.branch,
+        graduationYear: student.graduationYear,
         year: student.graduationYear,
+        cgpa: student.cgpa,
+        phoneNumber: student.phoneNumber,
+        githubUrl: student.githubUrl,
+        linkedinUrl: student.linkedinUrl,
+        skills: student.skills || [],
+        securityPreferences: student.securityPreferences,
       })
     )
   } catch (error) {

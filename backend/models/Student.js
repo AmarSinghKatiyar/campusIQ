@@ -85,6 +85,21 @@ const studentSchema = new mongoose.Schema(
       sparse: true,
       match: [/^[0-9]{10}$/, 'Phone number must be exactly 10 digits'],
     },
+    securityPreferences: {
+      twoStepVerification: {
+        type: Boolean,
+        default: false,
+      },
+      loginAlerts: {
+        type: Boolean,
+        default: true,
+      },
+      profileVisibility: {
+        type: String,
+        enum: ['placement-team', 'recruiters', 'private'],
+        default: 'placement-team',
+      },
+    },
     placementStatus: {
       type: String,
       enum: [

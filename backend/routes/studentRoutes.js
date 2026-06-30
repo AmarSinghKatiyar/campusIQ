@@ -28,7 +28,7 @@ router.get('/profile', authMiddleware, getProfile);
  * PUT /api/students/profile
  * Update student profile (allowed fields only)
  * Protected: Yes (Requires valid JWT token in cookies)
- * Body: { name, cgpa, skills, githubUrl, linkedinUrl, phoneNumber }
+ * Body: { name, email, cgpa, skills, githubUrl, linkedinUrl, phoneNumber, securityPreferences }
  */
 router.put('/profile', authMiddleware, updateProfile);
 
