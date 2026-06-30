@@ -10,7 +10,7 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
-import { api } from "../Lib/api";
+import { api } from "../lib/api";
 
 const STATUS_STYLES = {
   Placed: "bg-[color-mix(in_oklab,var(--accent)_16%,white)] text-[var(--accent)]",
