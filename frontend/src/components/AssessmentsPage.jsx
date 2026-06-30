@@ -1,54 +1,63 @@
 
 
-// =============================================
-// TEMPORARY DEMO DATA
-//
-// This hardcoded data is only for the project
-// demonstration.
-//
-// Once the MongoDB cluster/backend is available,
-// remove this array and fetch data from:
-//
-// GET /api/assessments
-//
-// Example:
-//
-// const response = await axios.get('/api/assessments');
-// const assessments = response.data.data;
-//
-// =============================================
-
-const assessments = [
-  {
-    id: 1,
-    title: 'DBMS Mid Semester',
-    subject: 'Database Management System',
-    description:
-      'Practice questions on SQL, Normalization, Transactions and Indexing.',
-    deadline: '20 Jul 2026',
-    pdfUrl: 'https://www.africau.edu/images/default/sample.pdf',
-  },
-  {
-    id: 2,
-    title: 'Operating Systems Assignment',
-    subject: 'Operating Systems',
-    description:
-      'CPU Scheduling, Deadlocks, Paging and Memory Management.',
-    deadline: '24 Jul 2026',
-    pdfUrl: 'https://www.africau.edu/images/default/sample.pdf',
-  },
-  {
-    id: 3,
-    title: 'Computer Networks Quiz',
-    subject: 'Computer Networks',
-    description:
-      'OSI Model, TCP/IP, Routing Algorithms and Switching.',
-    deadline: '28 Jul 2026',
-    pdfUrl: 'https://www.africau.edu/images/default/sample.pdf',
-  },
-]
+import { useState, useEffect } from 'react';
+import api from './api';
 
 export default function AssessmentsPage() {
+  const [assessments, setAssessments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    const fetchAssessments = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const response = await api.get('/assessments');
+        setAssessments(response.data.data || response.data);
+      } catch (err) {
+        console.error('Error fetching assessments:', err);
+        setError('Failed to load assessments. Please try again later.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchAssessments();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="opportunities-page">
+        <div className="page-header">
+          <h2>Assessments</h2>
+          <p>
+            Complete your upcoming assessments before the deadline.
+          </p>
+        </div>
+        <div style={{ textAlign: 'center', padding: '40px', fontSize: '18px', color: '#666' }}>
+          Loading...
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="opportunities-page">
+        <div className="page-header">
+          <h2>Assessments</h2>
+          <p>
+            Complete your upcoming assessments before the deadline.
+          </p>
+        </div>
+        <div style={{ textAlign: 'center', padding: '40px', fontSize: '16px', color: '#d32f2f' }}>
+          {error}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="opportunities-page">
       <div className="page-header">
@@ -60,7 +69,7 @@ export default function AssessmentsPage() {
 
       <div className="opportunities-grid">
         {assessments.map((assessment) => (
-          <div className="opportunity-card" key={assessment.id}>
+          <div className="opportunity-card" key={assessment._id}>
             <div className="opportunity-header">
               <div>
                 <h3>{assessment.title}</h3>
@@ -84,7 +93,7 @@ export default function AssessmentsPage() {
                 marginBottom: '18px',
               }}
             >
-              Deadline : {assessment.deadline}
+              Deadline : {new Date(assessment.deadline).toLocaleDateString()}
             </p>
 
             <div
@@ -111,5 +120,5 @@ export default function AssessmentsPage() {
         ))}
       </div>
     </div>
-  )
+  );
 }
