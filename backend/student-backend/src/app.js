@@ -1,6 +1,7 @@
 const express = require('express');
 const cookieParser = require('cookie-parser');
 const cors = require('cors');
+const path = require('path');
 require('dotenv').config();
 
 // Import routes
@@ -31,6 +32,9 @@ app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Cookie parser middleware - Parse JWT from cookies
 app.use(cookieParser());
+
+// Serve locally stored uploads in development or when Cloudinary is not configured.
+app.use('/uploads', express.static(path.join(__dirname, '..', 'uploads')));
 
 /**
  * API Routes

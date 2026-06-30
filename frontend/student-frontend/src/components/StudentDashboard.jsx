@@ -1,4 +1,3 @@
-import { useMemo, useState, useEffect, useRef } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { logout } from '../store/features/auth/authSlice'
 import {
@@ -12,6 +11,7 @@ import AssessmentsPage from './AssessmentsPage'
 import InterviewsPage from "./InterviewsPage";
 import LearningPage from "./Learning";
 import SettingsPage from './SettingsPage'
+import StudentProfilePage from './StudentProfilePage'
 import './StudentDashboard.css'
 
 const stats = [
