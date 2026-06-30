@@ -1,7 +1,7 @@
 // Load environment variables FIRST
 // if facing DNS resolution problems
-const dns = require("node:dns");
-dns.setServers(["1.1.1.1", "8.8.8.8"]);  
+// const dns = require("node:dns");
+// dns.setServers(["1.1.1.1", "8.8.8.8"]);  
 require('dotenv').config();
 
 const app = require('./src/app');
@@ -12,7 +12,7 @@ const { verifyCloudinaryConfig } = require('./config/cloudinary');
  * Handle Uncaught Exceptions
  */
 process.on('uncaughtException', (err) => {
-  console.error('\n❌ UNCAUGHT EXCEPTION');
+  console.error('\n UNCAUGHT EXCEPTION');
   console.error(err);
   process.exit(1);
 });

@@ -39,12 +39,12 @@ exports.getProfile = async (req, res) => {
  * Update Student Profile
  * Route: PUT /api/students/profile
  * Access: Private (Protected with JWT)
- * Allowed fields: name, cgpa, skills, githubUrl, linkedinUrl, phoneNumber
+ * Allowed fields: name, email, cgpa, skills, githubUrl, linkedinUrl, phoneNumber, securityPreferences
  */
 exports.updateProfile = async (req, res) => {
     try {
         // Define allowed fields for update
-        const allowedFields = ['name', 'cgpa', 'skills', 'githubUrl', 'linkedinUrl', 'phoneNumber'];
+        const allowedFields = ['name', 'email', 'cgpa', 'skills', 'githubUrl', 'linkedinUrl', 'phoneNumber', 'securityPreferences'];
 
         // Filter request body to only include allowed fields
         const updateData = {};
@@ -60,6 +60,31 @@ exports.updateProfile = async (req, res) => {
                 return res.status(400).json({
                     success: false,
                     message: 'CGPA must be between 0 and 10',
+                });
+            }
+        }
+
+        // Validate email if provided and ensure it is not already in use
+        if (updateData.email !== undefined) {
+            updateData.email = updateData.email.trim().toLowerCase();
+            const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+
+            if (!emailRegex.test(updateData.email)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Please provide a valid email',
+                });
+            }
+
+            const existingStudent = await Student.findOne({
+                email: updateData.email,
+                _id: { $ne: req.user._id },
+            });
+
+            if (existingStudent) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Email already registered',
                 });
             }
         }
@@ -116,6 +141,32 @@ exports.updateProfile = async (req, res) => {
 
             // Remove duplicate skills
             updateData.skills = [...new Set(updateData.skills)];
+        }
+
+        if (updateData.securityPreferences !== undefined) {
+            const allowedSecurityFields = ['twoStepVerification', 'loginAlerts', 'profileVisibility'];
+            const sanitizedPreferences = {};
+
+            Object.keys(updateData.securityPreferences || {}).forEach((key) => {
+                if (allowedSecurityFields.includes(key)) {
+                    sanitizedPreferences[key] = updateData.securityPreferences[key];
+                }
+            });
+
+            if (
+                sanitizedPreferences.profileVisibility &&
+                !['placement-team', 'recruiters', 'private'].includes(sanitizedPreferences.profileVisibility)
+            ) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid profile visibility setting',
+                });
+            }
+
+            updateData.securityPreferences = {
+                ...req.user.securityPreferences?.toObject?.(),
+                ...sanitizedPreferences,
+            };
         }
 
         // Update student profile using _id (consistent with Mongoose)

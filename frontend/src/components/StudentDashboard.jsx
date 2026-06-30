@@ -10,6 +10,7 @@ import Sidebar from './Sidebar'
 import OpportunitiesPage from './OpportunitiesPage'
 import AssessmentsPage from './AssessmentsPage'
 import InterviewsPage from "./InterviewsPage";
+import SettingsPage from './SettingsPage'
 import './StudentDashboard.css'
 
 const stats = [
@@ -320,6 +321,8 @@ export default function StudentDashboard() {
         return <AssessmentsPage />
       case 'interviews':
         return <InterviewsPage />
+      case 'settings':
+        return <SettingsPage />
       default:
         return (
           <div className="flex justify-center items-center h-full">
