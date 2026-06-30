@@ -10,13 +10,28 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api } from "../Lib/api";
 
 const STATUS_STYLES = {
   Placed: "bg-[color-mix(in_oklab,var(--accent)_16%,white)] text-[var(--accent)]",
+  Eligible: "bg-secondary text-secondary-foreground",
+  "Not Eligible": "bg-[color-mix(in_oklab,var(--destructive)_12%,white)] text-[var(--destructive)]",
   "In-Progress": "bg-secondary text-secondary-foreground",
   Unplaced: "bg-[color-mix(in_oklab,var(--destructive)_12%,white)] text-[var(--destructive)]",
 };
+
+const STATUS_LABELS = {
+  Placed: "Placed",
+  Eligible: "In-Progress",
+  "Not Eligible": "Unplaced",
+};
+
+const STATUS_OPTIONS = [
+  { value: "All", label: "All" },
+  { value: "Placed", label: "Placed" },
+  { value: "Eligible", label: "In-Progress" },
+  { value: "Not Eligible", label: "Unplaced" },
+];
 
 const BRANCHES = [
   "Computer Science",
@@ -46,7 +61,41 @@ function ReadinessBar({ value = 0 }) {
 }
 
 function emptyForm() {
-  return { name: "", email: "", rollNumber: "", branch: BRANCHES[0], cgpa: "", batch: "" };
+  return {
+    name: "",
+    email: "",
+    rollNumber: "",
+    branch: BRANCHES[0],
+    cgpa: "",
+    batch: "",
+    phone: "",
+    leetcode: "",
+    readiness: "",
+    status: "Eligible",
+  };
+}
+
+function downloadCsv(filename, rows) {
+  const csv = rows
+    .map((row) =>
+      row
+        .map((cell) => {
+          const value = cell == null ? "" : String(cell);
+          return `"${value.replace(/"/g, '""')}"`;
+        })
+        .join(",")
+    )
+    .join("\r\n");
+
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.setAttribute("download", filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function AddStudentModal({ onClose, onCreated }) {
@@ -67,6 +116,10 @@ function AddStudentModal({ onClose, onCreated }) {
         ...form,
         cgpa: parseFloat(form.cgpa),
         batch: parseInt(form.batch, 10),
+        phone: form.phone,
+        leetcode: parseInt(form.leetcode, 10) || 0,
+        readiness: parseInt(form.readiness, 10) || 0,
+        status: form.status,
       });
       onCreated();
     } catch (err) {
@@ -117,6 +170,15 @@ function AddStudentModal({ onClose, onCreated }) {
               />
             </div>
             <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Phone</label>
+              <input
+                required
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
               <label className="text-sm text-muted-foreground mb-1.5 block">Branch</label>
               <select
                 value={form.branch}
@@ -152,6 +214,41 @@ function AddStudentModal({ onClose, onCreated }) {
                 className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               />
             </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">LeetCode</label>
+              <input
+                required
+                type="number"
+                min="0"
+                value={form.leetcode}
+                onChange={(e) => update("leetcode", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Readiness</label>
+              <input
+                required
+                type="number"
+                min="0"
+                max="100"
+                value={form.readiness}
+                onChange={(e) => update("readiness", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => update("status", e.target.value)}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="Eligible">Eligible</option>
+                <option value="Placed">Placed</option>
+                <option value="Not Eligible">Not Eligible</option>
+              </select>
+            </div>
           </div>
 
           {error && <p className="text-sm text-[var(--destructive)]">{error}</p>}
@@ -185,6 +282,7 @@ export function StudentsPage() {
   const [statusFilter, setStatusFilter] = useState("All");
   const [branchFilter, setBranchFilter] = useState("All");
   const [page, setPage] = useState(1);
+  const [rowsPerPage, setRowsPerPage] = useState(6);
   const [selected, setSelected] = useState([]);
   const [showAdd, setShowAdd] = useState(false);
 
@@ -192,9 +290,16 @@ export function StudentsPage() {
     setLoading(true);
     setError("");
     try {
+      const statusParam =
+        statusFilter === "In-Progress"
+          ? "Eligible"
+          : statusFilter === "Unplaced"
+          ? "Not Eligible"
+          : statusFilter;
+
       const data = await api.get("/students", {
         search: query || undefined,
-        status: statusFilter !== "All" ? statusFilter : undefined,
+        status: statusParam !== "All" ? statusParam : undefined,
         branch: branchFilter !== "All" ? branchFilter : undefined,
       });
       setStudents(data);
@@ -203,6 +308,29 @@ export function StudentsPage() {
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleExport() {
+    const rows = [
+      ["Name", "Roll Number", "Email", "Branch", "Batch", "CGPA", "LeetCode", "Readiness", "Status"],
+      ...students.map((s) => {
+        const statusValue = STATUS_LABELS[s.status] || STATUS_LABELS[s.placementStatus] || s.status || s.placementStatus || "";
+        return [
+          s.name,
+          s.rollNumber,
+          s.email,
+          s.branch,
+          s.batch,
+          s.cgpa?.toFixed?.(1) ?? s.cgpa,
+          s.leetcode ?? "",
+          s.readiness ?? "",
+          statusValue,
+        ];
+      }),
+    ];
+
+    const filename = `students_export_${new Date().toISOString().slice(0, 10)}.csv`;
+    downloadCsv(filename, rows);
   }
 
   useEffect(() => {
@@ -215,10 +343,10 @@ export function StudentsPage() {
     () => ["All", ...Array.from(new Set(students.map((s) => s.branch)))],
     [students]
   );
-  const statuses = ["All", "Placed", "In-Progress", "Unplaced"];
+  const statuses = STATUS_OPTIONS;
 
-  const totalPages = Math.max(1, Math.ceil(students.length / PAGE_SIZE));
-  const pageItems = students.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(students.length / rowsPerPage));
+  const pageItems = students.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
   const allOnPageSelected =
     pageItems.length > 0 && pageItems.every((s) => selected.includes(s._id));
@@ -255,8 +383,11 @@ export function StudentsPage() {
             {students.length} students · readiness scores computed from CGPA, aptitude, communication & projects
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <button className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors">
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            onClick={handleExport}
+            className="inline-flex items-center gap-2 rounded-lg border border-border bg-card px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors"
+          >
             <Download className="size-4" />
             Export
           </button>
@@ -267,6 +398,18 @@ export function StudentsPage() {
             <Plus className="size-4" />
             Add student
           </button>
+          <select
+            value={rowsPerPage}
+            onChange={(e) => {
+              setRowsPerPage(Number(e.target.value));
+              setPage(1);
+            }}
+            className="rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+          >
+            {[6, 10, 20, 50].map((count) => (
+              <option key={count} value={count}>{count} rows</option>
+            ))}
+          </select>
         </div>
       </div>
 
@@ -301,16 +444,16 @@ export function StudentsPage() {
         <div className="inline-flex rounded-lg border border-border bg-card p-1">
           {statuses.map((s) => (
             <button
-              key={s}
+              key={s.value}
               onClick={() => {
-                setStatusFilter(s);
+                setStatusFilter(s.value);
                 setPage(1);
               }}
               className={`px-3 py-1.5 rounded-md text-sm transition-colors ${
-                statusFilter === s ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
+                statusFilter === s.value ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:text-foreground"
               }`}
             >
-              {s}
+              {s.label}
             </button>
           ))}
         </div>
@@ -405,9 +548,14 @@ export function StudentsPage() {
                   <td className="px-4 py-3 text-foreground tabular-nums">{s.leetcode ?? 0}</td>
                   <td className="px-4 py-3"><ReadinessBar value={s.readiness} /></td>
                   <td className="px-4 py-3">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[s.placementStatus]}`}>
-                      {s.placementStatus}
-                    </span>
+                    {(() => {
+                      const rawStatus = s.status || s.placementStatus || "";
+                      return (
+                        <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${STATUS_STYLES[rawStatus]}`}>
+                          {STATUS_LABELS[rawStatus] || rawStatus || "Unknown"}
+                        </span>
+                      );
+                    })()}
                   </td>
                   <td className="px-4 py-3 text-right">
                     <button onClick={() => removeStudent(s._id)} className="text-muted-foreground hover:text-[var(--destructive)]">
