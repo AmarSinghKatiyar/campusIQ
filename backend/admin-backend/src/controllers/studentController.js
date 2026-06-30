@@ -23,12 +23,35 @@ export const getStudents = async (req, res) => {
     const query = {};
 
     if (branch && branch !== 'All') query.branch = branch;
-    if (status && status !== 'All') query.status = status;
-    if (search) {
+    if (status && status !== 'All') {
+      const statusValue = status.toString().trim();
+      const mappedStatus =
+        statusValue === 'In-Progress' ? 'Eligible' :
+        statusValue === 'Unplaced' ? 'Not Eligible' :
+        statusValue;
+
       query.$or = [
-        { name: { $regex: search, $options: 'i' } },
-        { rollNumber: { $regex: search, $options: 'i' } },
+        { status: mappedStatus },
+        { placementStatus: statusValue === 'In-Progress' ? 'In-Progress' : statusValue === 'Unplaced' ? 'Unplaced' : mappedStatus },
       ];
+    }
+    if (search) {
+      const searchQuery = {
+        $or: [
+          { name: { $regex: search, $options: 'i' } },
+          { rollNumber: { $regex: search, $options: 'i' } },
+        ],
+      };
+
+      if (query.$or) {
+        query.$and = [
+          { $or: query.$or },
+          searchQuery,
+        ];
+        delete query.$or;
+      } else {
+        query.$or = searchQuery.$or;
+      }
     }
 
     const students = await Student.find(query).sort(sort);
