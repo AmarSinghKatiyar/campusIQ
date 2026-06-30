@@ -10,7 +10,7 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
-import { api } from "../lib/api";
+import { api } from "../Lib/api";
 
 const STATUS_STYLES = {
   Placed: "bg-[color-mix(in_oklab,var(--accent)_16%,white)] text-[var(--accent)]",
@@ -46,7 +46,18 @@ function ReadinessBar({ value = 0 }) {
 }
 
 function emptyForm() {
-  return { name: "", email: "", rollNumber: "", branch: BRANCHES[0], cgpa: "", batch: "" };
+  return {
+    name: "",
+    email: "",
+    rollNumber: "",
+    branch: BRANCHES[0],
+    cgpa: "",
+    batch: "",
+    phone: "",
+    leetcode: "",
+    readiness: "",
+    status: "Eligible",
+  };
 }
 
 function AddStudentModal({ onClose, onCreated }) {
@@ -67,6 +78,10 @@ function AddStudentModal({ onClose, onCreated }) {
         ...form,
         cgpa: parseFloat(form.cgpa),
         batch: parseInt(form.batch, 10),
+        phone: form.phone,
+        leetcode: parseInt(form.leetcode, 10) || 0,
+        readiness: parseInt(form.readiness, 10) || 0,
+        status: form.status,
       });
       onCreated();
     } catch (err) {
@@ -117,6 +132,15 @@ function AddStudentModal({ onClose, onCreated }) {
               />
             </div>
             <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Phone</label>
+              <input
+                required
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
               <label className="text-sm text-muted-foreground mb-1.5 block">Branch</label>
               <select
                 value={form.branch}
@@ -151,6 +175,41 @@ function AddStudentModal({ onClose, onCreated }) {
                 onChange={(e) => update("cgpa", e.target.value)}
                 className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
               />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">LeetCode</label>
+              <input
+                required
+                type="number"
+                min="0"
+                value={form.leetcode}
+                onChange={(e) => update("leetcode", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Readiness</label>
+              <input
+                required
+                type="number"
+                min="0"
+                max="100"
+                value={form.readiness}
+                onChange={(e) => update("readiness", e.target.value)}
+                className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              />
+            </div>
+            <div>
+              <label className="text-sm text-muted-foreground mb-1.5 block">Status</label>
+              <select
+                value={form.status}
+                onChange={(e) => update("status", e.target.value)}
+                className="w-full rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="Eligible">Eligible</option>
+                <option value="Placed">Placed</option>
+                <option value="Not Eligible">Not Eligible</option>
+              </select>
             </div>
           </div>
 
