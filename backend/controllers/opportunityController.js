@@ -14,28 +14,22 @@ const Student = require("../models/Student");
  */
 exports.getAllOpportunities = async (req, res) => {
   try {
-    console.log("========== GET ALL OPPORTUNITIES ==========");
-    console.log("Connected Database:", Opportunity.db.name);
-
-    const opportunities = await Opportunity.find({})
-      .populate("postedBy", "name")
+    const opportunities = await Opportunity.find()
+      .populate('postedBy', 'name')
       .sort({ createdAt: -1 });
 
-    console.log("Total Opportunities:", opportunities.length);
-    console.log(opportunities);
+    console.log('Opportunities found:', opportunities);
 
     res.status(200).json({
       success: true,
+      message: 'Opportunities fetched successfully',
       count: opportunities.length,
       data: opportunities,
     });
   } catch (error) {
-    console.error("Get Opportunities Error:", error);
+    console.error('Error fetching opportunities:', error);
 
-    res.status(500).json({
-      success: false,
-      message: "Server Error: " + error.message,
-    });
+    res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };
 

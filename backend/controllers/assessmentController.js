@@ -3,19 +3,22 @@ const Assessment = require("../models/Assessment");
 // GET all assessments
 exports.getAllAssessments = async (req, res) => {
   try {
-    const assessments = await Assessment.find({
-      isActive: true,
-    }).sort({ deadline: 1 });
+    const assessments = await Assessment.find().sort({ deadline: 1 });
+
+    console.log("Assessments found:", assessments);
 
     res.status(200).json({
       success: true,
+      message: "Assessments fetched successfully",
       count: assessments.length,
       data: assessments,
     });
   } catch (error) {
+    console.error("Error fetching assessments:", error);
+
     res.status(500).json({
       success: false,
-      message: error.message,
+      message: "Server Error: " + error.message,
     });
   }
 };

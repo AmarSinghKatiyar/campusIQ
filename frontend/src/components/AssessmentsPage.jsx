@@ -1,7 +1,5 @@
-
-
 import { useState, useEffect } from 'react';
-import api from './api';
+import axios from 'axios';
 
 export default function AssessmentsPage() {
   const [assessments, setAssessments] = useState([]);
@@ -13,8 +11,8 @@ export default function AssessmentsPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await api.get('/assessments');
-        setAssessments(response.data.data || response.data);
+        const response = await axios.get('http://localhost:5000/api/assessments');
+        setAssessments(response.data.data || []);
       } catch (err) {
         console.error('Error fetching assessments:', err);
         setError('Failed to load assessments. Please try again later.');
@@ -68,56 +66,60 @@ export default function AssessmentsPage() {
       </div>
 
       <div className="opportunities-grid">
-        {assessments.map((assessment) => (
-          <div className="opportunity-card" key={assessment._id}>
-            <div className="opportunity-header">
-              <div>
-                <h3>{assessment.title}</h3>
-                <p>{assessment.subject}</p>
+        {assessments.length > 0 ? (
+          assessments.map((assessment) => (
+            <div className="opportunity-card" key={assessment._id}>
+              <div className="opportunity-header">
+                <div>
+                  <h3>{assessment.title}</h3>
+                  <p>{assessment.subject}</p>
+                </div>
+              </div>
+
+              <p
+                style={{
+                  margin: '15px 0',
+                  color: '#666',
+                  lineHeight: '1.5',
+                }}
+              >
+                {assessment.description}
+              </p>
+
+              <p
+                style={{
+                  fontWeight: 600,
+                  marginBottom: '18px',
+                }}
+              >
+                Deadline : {new Date(assessment.deadline).toLocaleDateString()}
+              </p>
+
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '12px',
+                }}
+              >
+                <button
+                  className="apply-btn"
+                  onClick={() => window.open(assessment.pdfUrl, '_blank')}
+                >
+                  View PDF
+                </button>
+
+                <button
+                  className="details-btn"
+                  onClick={() => window.open(assessment.pdfUrl, '_blank')}
+                >
+                  Download
+                </button>
               </div>
             </div>
-
-            <p
-              style={{
-                margin: '15px 0',
-                color: '#666',
-                lineHeight: '1.5',
-              }}
-            >
-              {assessment.description}
-            </p>
-
-            <p
-              style={{
-                fontWeight: 600,
-                marginBottom: '18px',
-              }}
-            >
-              Deadline : {new Date(assessment.deadline).toLocaleDateString()}
-            </p>
-
-            <div
-              style={{
-                display: 'flex',
-                gap: '12px',
-              }}
-            >
-              <button
-                className="apply-btn"
-                onClick={() => window.open(assessment.pdfUrl, '_blank')}
-              >
-                View PDF
-              </button>
-
-              <button
-                className="details-btn"
-                onClick={() => window.open(assessment.pdfUrl, '_blank')}
-              >
-                Download
-              </button>
-            </div>
-          </div>
-        ))}
+          ))
+        ) : (
+          <p>No assessments found.</p>
+        )}
       </div>
     </div>
   );

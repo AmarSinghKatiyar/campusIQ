@@ -24,7 +24,7 @@ const router = express.Router();
 // @access  Student (GET), Admin (POST)
 router
   .route('/')
-  .get(authMiddleware, getAllOpportunities)
+  .get(getAllOpportunities)
   .post(authMiddleware, adminMiddleware, createOpportunity);
 
 // @desc    Get, Update, and Delete a single opportunity

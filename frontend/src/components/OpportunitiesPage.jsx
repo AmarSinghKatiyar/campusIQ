@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import OpportunityCard from '../components/OpportunityCard';
-import api from './api';
+import axios from 'axios';
 
 const OpportunitiesPage = () => {
   const [opportunities, setOpportunities] = useState([]);
@@ -11,9 +11,8 @@ const OpportunitiesPage = () => {
     const fetchOpportunities = async () => {
       try {
         setLoading(true);
-        // The 'api' service should be configured to send credentials (cookies)
-        const response = await api.get('/opportunities');
-        setOpportunities(response.data.data);
+        const response = await axios.get('http://localhost:5000/api/opportunities');
+        setOpportunities(response.data.data || []);
         setError(null);
       } catch (err) {
         setError('Failed to fetch opportunities. Please try again later.');
