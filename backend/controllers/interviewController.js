@@ -1,22 +1,16 @@
 const Interview = require("../models/Interview");
 
 /**
- * ========================================
- *      Interview Controller
- * ========================================
- */
-
-/**
- * Get all active interviews
+ * Get all interviews
  * Route: GET /api/interviews
  */
 exports.getAllInterviews = async (req, res) => {
   try {
-    const interviews = await Interview.find({
-      isActive: true,
-    }).sort({
+    const interviews = await Interview.find().sort({
       date: 1,
     });
+
+    console.log("Interviews found:", interviews);
 
     res.status(200).json({
       success: true,
