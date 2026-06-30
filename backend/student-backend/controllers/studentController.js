@@ -2,7 +2,158 @@
 const Student = require('../models/Student');
 const { cloudinary } = require('../config/cloudinary');
 const DatauriParser = require('datauri/parser');
+const fs = require('fs/promises');
 const path = require('path');
+const { PDFParse } = require('pdf-parse');
+
+const knownSkills = [
+    'JavaScript',
+    'TypeScript',
+    'React',
+    'React.js',
+    'Node.js',
+    'Express.js',
+    'MongoDB',
+    'SQL',
+    'Java',
+    'Python',
+    'C++',
+    'C',
+    'HTML',
+    'CSS',
+    'Tailwind CSS',
+    'Git',
+    'GitHub',
+    'DSA',
+    'Data Structures',
+    'Algorithms',
+    'REST API',
+    'Redux',
+    'MySQL',
+    'PostgreSQL',
+    'Firebase',
+    'Docker',
+    'AWS',
+];
+
+const hasUsableCloudinaryCredentials = () => {
+    const values = [
+        process.env.CLOUDINARY_CLOUD_NAME,
+        process.env.CLOUDINARY_API_KEY,
+        process.env.CLOUDINARY_API_SECRET,
+    ];
+
+    return values.every((value) => value && value.length > 6 && !/^x+$/i.test(value));
+};
+
+const saveResumeLocally = async (req) => {
+    const uploadDir = path.join(__dirname, '..', 'uploads', 'resumes');
+    const fileName = `${req.user._id}-resume.pdf`;
+    const filePath = path.join(uploadDir, fileName);
+
+    await fs.mkdir(uploadDir, { recursive: true });
+    await fs.writeFile(filePath, req.file.buffer);
+
+    return `${req.protocol}://${req.get('host')}/uploads/resumes/${fileName}`;
+};
+
+const normalizeProfileUrl = (url) => {
+    if (!url) return '';
+    const cleaned = url.replace(/[),.;\]]+$/, '');
+    return /^https?:\/\//i.test(cleaned) ? cleaned : `https://${cleaned}`;
+};
+
+const parseResumeText = async (buffer) => {
+    const parser = new PDFParse({ data: buffer });
+
+    try {
+        const result = await parser.getText();
+        return result.text || '';
+    } finally {
+        await parser.destroy();
+    }
+};
+
+const extractResumeDetails = (text) => {
+    const lines = text
+        .split(/\r?\n/)
+        .map((line) => line.trim())
+        .filter(Boolean);
+    const normalizedText = text.replace(/\s+/g, ' ');
+    const extracted = {};
+
+    const nameLine = lines.find((line) => {
+        if (line.length < 2 || line.length > 50) return false;
+        if (/@|https?:|www\.|github|linkedin|\d{4,}/i.test(line)) return false;
+        if (/resume|curriculum vitae|profile|summary|education|skills|experience|project/i.test(line)) return false;
+        return /^[a-zA-Z][a-zA-Z .'-]+$/.test(line);
+    });
+
+    if (nameLine) {
+        extracted.name = nameLine.replace(/\s+/g, ' ');
+    }
+
+    const emailMatch = normalizedText.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i);
+    if (emailMatch) {
+        extracted.email = emailMatch[0].toLowerCase();
+    }
+
+    const phoneMatch = normalizedText.match(/(?:\+?91[\s-]?)?[6-9]\d(?:[\s-]?\d){8}/);
+    if (phoneMatch) {
+        const digits = phoneMatch[0].replace(/\D/g, '').slice(-10);
+        if (digits.length === 10) {
+            extracted.phoneNumber = digits;
+        }
+    }
+
+    const githubMatch = normalizedText.match(/(?:https?:\/\/)?(?:www\.)?github\.com\/[a-zA-Z0-9_-]+\/?/i);
+    if (githubMatch) {
+        extracted.githubUrl = normalizeProfileUrl(githubMatch[0]);
+    }
+
+    const linkedinMatch = normalizedText.match(/(?:https?:\/\/)?(?:www\.)?linkedin\.com\/in\/[a-zA-Z0-9_-]+\/?/i);
+    if (linkedinMatch) {
+        extracted.linkedinUrl = normalizeProfileUrl(linkedinMatch[0]);
+    }
+
+    const cgpaMatch = normalizedText.match(/(?:CGPA|GPA)\s*[:\-]?\s*([0-9](?:\.[0-9]{1,2})?|10(?:\.0{1,2})?)(?:\s*\/\s*10)?/i);
+    if (cgpaMatch) {
+        const cgpa = Number(cgpaMatch[1]);
+        if (!Number.isNaN(cgpa) && cgpa >= 0 && cgpa <= 10) {
+            extracted.cgpa = cgpa;
+        }
+    }
+
+    const branchMap = [
+        [/computer science|cse/i, 'CSE'],
+        [/information technology|\bIT\b/i, 'IT'],
+        [/electronics|ece/i, 'ECE'],
+        [/electrical|ee/i, 'EE'],
+        [/mechanical|me/i, 'ME'],
+        [/civil|ce/i, 'CE'],
+    ];
+    const branchMatch = branchMap.find(([pattern]) => pattern.test(normalizedText));
+    if (branchMatch) {
+        extracted.branch = branchMatch[1];
+    }
+
+    const yearMatch = normalizedText.match(/\b(202[4-9]|2030)\b/);
+    if (yearMatch) {
+        extracted.graduationYear = Number(yearMatch[1]);
+    }
+
+    const lowerText = normalizedText.toLowerCase();
+    const skills = knownSkills.filter((skill) => {
+        const escaped = skill.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+        return new RegExp(`(^|[^a-z0-9+#.])${escaped.toLowerCase()}([^a-z0-9+#.]|$)`, 'i').test(lowerText);
+    });
+
+    if (skills.length) {
+        extracted.skills = [...new Set(skills)].slice(0, 20);
+    }
+
+    return extracted;
+};
 
 /**
  * Get Student Profile
@@ -231,41 +382,72 @@ exports.uploadResume = async (req, res) => {
             });
         }
 
-        // Parse file to datauri format for Cloudinary
-        const parser = new DatauriParser();
-        const extname = path.extname(req.file.originalname);
+        let resumeUrl;
 
-        // Format datauri with file buffer
-        const fileDataUri = parser.format(extname, req.file.buffer);
+        if (hasUsableCloudinaryCredentials()) {
+            // Parse file to datauri format for Cloudinary
+            const parser = new DatauriParser();
+            const extname = path.extname(req.file.originalname) || '.pdf';
 
-        if (!fileDataUri || !fileDataUri.content) {
-            return res.status(400).json({
-                success: false,
-                message: 'Error processing file. Please try again.',
+            // Format datauri with file buffer
+            const fileDataUri = parser.format(extname, req.file.buffer);
+
+            if (!fileDataUri || !fileDataUri.content) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Error processing file. Please try again.',
+                });
+            }
+
+            // Upload PDFs as raw files so Cloudinary does not try to parse resumes as images.
+            const result = await cloudinary.uploader.upload(fileDataUri.content, {
+                resource_type: 'raw',
+                folder: 'campusiq-resumes',
+                public_id: `${req.user._id}-resume.pdf`,
+                overwrite: true,
             });
+
+            // Verify upload success
+            if (!result || !result.secure_url) {
+                return res.status(500).json({
+                    success: false,
+                    message: 'Resume upload failed. Please try again.',
+                });
+            }
+
+            resumeUrl = result.secure_url;
+        } else {
+            resumeUrl = await saveResumeLocally(req);
         }
 
-        // Upload to Cloudinary
-        const result = await cloudinary.uploader.upload(fileDataUri.content, {
-            resource_type: 'auto',
-            folder: 'campusiq-resumes',
-            public_id: `${req.user._id}-resume`,
-            overwrite: true,
-        });
-
-        // Verify upload success
-        if (!result || !result.secure_url) {
-            return res.status(500).json({
-                success: false,
-                message: 'Resume upload failed. Please try again.',
-            });
+        let extractedDetails = {};
+        try {
+            const resumeText = await parseResumeText(req.file.buffer);
+            extractedDetails = extractResumeDetails(resumeText);
+        } catch (parseError) {
+            console.warn('Resume text extraction failed:', parseError.message);
         }
 
-        // Update student with new resume URL
+        const updateData = {
+            resumeUrl,
+            ...extractedDetails,
+        };
+
+        if (updateData.email && updateData.email !== req.user.email) {
+            const existingStudent = await Student.findOne({
+                email: updateData.email,
+                _id: { $ne: req.user._id },
+            });
+
+            if (existingStudent) {
+                delete updateData.email;
+            }
+        }
+
         const student = await Student.findByIdAndUpdate(
             req.user._id,
-            { resumeUrl: result.secure_url },
-            { new: true }
+            updateData,
+            { new: true, runValidators: true }
         );
 
         if (!student) {
@@ -280,14 +462,22 @@ exports.uploadResume = async (req, res) => {
             message: 'Resume uploaded successfully',
             data: {
                 student,
-                resumeUrl: result.secure_url,
+                resumeUrl,
+                extractedDetails,
             },
         });
     } catch (error) {
         console.error('Error in uploadResume:', error);
 
-        // Handle Cloudinary-specific errors
-        if (error.message && error.message.includes('Invalid')) {
+        if (error.http_code === 401 || /api_key|api secret|credentials/i.test(error.message || '')) {
+            return res.status(500).json({
+                success: false,
+                message: 'Cloudinary credentials are invalid. Please check backend .env values.',
+            });
+        }
+
+        // Handle file-specific Cloudinary errors without hiding configuration problems.
+        if (error.message && /invalid (file|image)|unsupported|format/i.test(error.message)) {
             return res.status(400).json({
                 success: false,
                 message: 'Invalid file format. Please upload a valid PDF.',

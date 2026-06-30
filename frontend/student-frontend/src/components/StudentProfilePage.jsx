@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { updateUserProfile } from '../store/features/auth/authSlice'
+import { updateUser } from '../store/features/auth/authSlice'
+import './StudentProfilePage.css'
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
@@ -8,11 +9,15 @@ const emptyProfile = {
   name: '',
   email: '',
   phoneNumber: '',
+  rollNumber: '',
+  branch: '',
+  graduationYear: '',
   cgpa: '',
   skills: [],
   githubUrl: '',
   linkedinUrl: '',
   resumeUrl: '',
+  placementStatus: '',
 }
 
 const normalizeProfile = (profile) => ({
@@ -47,6 +52,9 @@ export default function StudentProfilePage() {
       profile.name,
       profile.email,
       profile.phoneNumber,
+      profile.rollNumber,
+      profile.branch,
+      profile.graduationYear,
       profile.cgpa,
       profile.githubUrl,
       profile.linkedinUrl,
@@ -56,6 +64,25 @@ export default function StudentProfilePage() {
 
     return Math.round((fields.filter(Boolean).length / fields.length) * 100)
   }, [profile])
+
+  const displayBranch = useMemo(() => {
+    const branchNames = {
+      CSE: 'Computer Science Engineering',
+      IT: 'Information Technology',
+      ECE: 'Electronics and Communication',
+      EE: 'Electrical Engineering',
+      ME: 'Mechanical Engineering',
+      CE: 'Civil Engineering',
+    }
+
+    return branchNames[profile.branch] || profile.branch || 'Not added'
+  }, [profile.branch])
+
+  const resumeFileName = useMemo(() => {
+    if (!profile.resumeUrl) return 'Resume.pdf'
+    const lastSegment = profile.resumeUrl.split('/').pop()
+    return decodeURIComponent(lastSegment || 'Resume.pdf')
+  }, [profile.resumeUrl])
 
   useEffect(() => {
     const fetchProfile = async () => {
@@ -74,7 +101,7 @@ export default function StudentProfilePage() {
 
         const nextProfile = normalizeProfile(data.data)
         setProfile(nextProfile)
-        dispatch(updateUserProfile(nextProfile))
+        dispatch(updateUser(nextProfile))
         setStatus('idle')
       } catch (error) {
         setStatus('error')
@@ -133,7 +160,7 @@ export default function StudentProfilePage() {
 
       const nextProfile = normalizeProfile(data.data)
       setProfile(nextProfile)
-      dispatch(updateUserProfile(nextProfile))
+      dispatch(updateUser(nextProfile))
       setStatus('idle')
       setMessage('Profile updated successfully')
     } catch (error) {
@@ -175,10 +202,11 @@ export default function StudentProfilePage() {
         ...profile,
         resumeUrl: data.data?.resumeUrl,
       })
+      const extractedCount = Object.keys(data.data?.extractedDetails || {}).length
       setProfile(nextProfile)
-      dispatch(updateUserProfile(nextProfile))
+      dispatch(updateUser(nextProfile))
       setStatus('idle')
-      setMessage('Resume uploaded successfully')
+      setMessage(extractedCount ? `Resume uploaded and ${extractedCount} details fetched` : 'Resume uploaded. No readable details were found in this PDF.')
     } catch (error) {
       setStatus('error')
       setMessage(error.message || 'Unable to upload resume')
@@ -189,31 +217,49 @@ export default function StudentProfilePage() {
 
   return (
     <div className="profile-view">
-      <section className="profile-hero">
-        <div className="profile-identity">
-          <div className="profile-photo">
-            <span>{initials}</span>
+      <div className="profile-page-top">
+        <div>
+          <h2>My Profile</h2>
+          <p>Manage your profile and showcase your skills</p>
+        </div>
+        <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={status === 'uploading'}>
+          {status === 'uploading' ? 'Reading Resume...' : 'Upload New Resume'}
+        </button>
+      </div>
+
+      <section className="profile-header">
+        <div className="profile-identity-card">
+          <div className="profile-avatar">
+            {initials}
           </div>
 
           <div className="profile-intro">
             <div className="profile-name-line">
               <h2>{profile.name || 'Student User'}</h2>
-              <span className="verified-badge">Verified</span>
+              <span>{profile.placementStatus || 'Active Student'}</span>
             </div>
-            <p>{[profile.branch, profile.graduationYear || profile.year].filter(Boolean).join(' · ') || 'Student profile'}</p>
-            <div className="profile-contact-strip">
-              <span>{profile.email || 'Email not added'}</span>
-              <span>{profile.phoneNumber || 'Phone not added'}</span>
+            <p>{[displayBranch, profile.graduationYear && `Batch ${profile.graduationYear}`].filter(Boolean).join(' / ') || 'Complete your student details to improve placement visibility.'}</p>
+            <div className="profile-quick-meta">
+              <span>Email: {profile.email || 'Not added'}</span>
+              <span>Phone: {profile.phoneNumber || 'Not added'}</span>
+              <span>CGPA: {profile.cgpa || 'Not added'}</span>
+            </div>
+            <div className="profile-link-row">
+              {profile.githubUrl ? <a href={profile.githubUrl} target="_blank" rel="noreferrer">GitHub</a> : <span>GitHub</span>}
+              {profile.linkedinUrl ? <a href={profile.linkedinUrl} target="_blank" rel="noreferrer">LinkedIn</a> : <span>LinkedIn</span>}
+              <span>Portfolio</span>
             </div>
           </div>
         </div>
 
-        <aside className="profile-strength-card">
-          <h3>Profile Strength</h3>
+        <aside className="profile-strength-card" aria-label="Profile completion">
           <div className="strength-ring" style={{ '--profile-strength': `${profileStrength}%` }}>
             <span>{profileStrength}%</span>
           </div>
-          <strong>{profileStrength >= 85 ? 'Excellent' : 'Keep building'}</strong>
+          <div>
+            <strong>{profileStrength >= 85 ? 'Excellent profile' : 'Profile strength'}</strong>
+            <small>{profile.resumeUrl ? 'Resume is attached' : 'Upload your resume to complete this.'}</small>
+          </div>
         </aside>
       </section>
 
@@ -223,64 +269,132 @@ export default function StudentProfilePage() {
         </p>
       ) : null}
 
-      <section className="profile-grid">
+      <section className="completion-card">
+        <div>
+          <strong>Profile Completion</strong>
+          <span>Complete your profile to increase your chances of being noticed by recruiters.</span>
+        </div>
+        <div className="completion-track" aria-label={`${profileStrength}% completed`}>
+          <span style={{ width: `${profileStrength}%` }} />
+        </div>
+        <strong>{profileStrength}% Completed</strong>
+      </section>
+
+      <section className="profile-layout">
         <article className="profile-panel">
           <div className="profile-panel-header">
             <h3>Personal Information</h3>
           </div>
-          <div className="profile-form-grid">
+          <div className="info-list">
             <label>
               <span>Full Name</span>
-              <input value={profile.name} onChange={(event) => handleChange('name', event.target.value)} />
+              <input value={profile.name} placeholder="Your full name" onChange={(event) => handleChange('name', event.target.value)} />
             </label>
             <label>
               <span>Email</span>
-              <input value={profile.email} onChange={(event) => handleChange('email', event.target.value)} />
+              <input type="email" value={profile.email} placeholder="name@example.com" onChange={(event) => handleChange('email', event.target.value)} />
             </label>
             <label>
               <span>Phone</span>
-              <input value={profile.phoneNumber || ''} onChange={(event) => handleChange('phoneNumber', event.target.value)} />
+              <input value={profile.phoneNumber || ''} placeholder="10 digit number" onChange={(event) => handleChange('phoneNumber', event.target.value.replace(/\D/g, '').slice(0, 10))} />
             </label>
             <label>
-              <span>CGPA</span>
-              <input value={profile.cgpa} onChange={(event) => handleChange('cgpa', event.target.value)} />
+              <span>GitHub</span>
+              <input value={profile.githubUrl || ''} placeholder="https://github.com/username" onChange={(event) => handleChange('githubUrl', event.target.value)} />
+            </label>
+            <label>
+              <span>LinkedIn</span>
+              <input value={profile.linkedinUrl || ''} placeholder="https://linkedin.com/in/username" onChange={(event) => handleChange('linkedinUrl', event.target.value)} />
             </label>
           </div>
         </article>
 
         <article className="profile-panel">
           <div className="profile-panel-header">
-            <h3>Links and Skills</h3>
+            <h3>Education</h3>
           </div>
-          <div className="profile-form-grid">
+          <div className="info-list">
             <label>
-              <span>GitHub</span>
-              <input value={profile.githubUrl || ''} onChange={(event) => handleChange('githubUrl', event.target.value)} />
+              <span>Roll Number</span>
+              <input value={profile.rollNumber || 'Not added'} disabled />
             </label>
             <label>
-              <span>LinkedIn</span>
-              <input value={profile.linkedinUrl || ''} onChange={(event) => handleChange('linkedinUrl', event.target.value)} />
+              <span>Degree</span>
+              <input value="B.Tech" disabled />
             </label>
-            <label className="wide">
-              <span>Skills</span>
-              <textarea
-                rows="4"
-                value={formatSkills(profile.skills)}
-                onChange={(event) => handleSkillsChange(event.target.value)}
-              />
+            <label>
+              <span>Branch</span>
+              <input value={displayBranch} disabled />
             </label>
+            <label>
+              <span>CGPA</span>
+              <input type="number" min="0" max="10" step="0.01" value={profile.cgpa} placeholder="0.00" onChange={(event) => handleChange('cgpa', event.target.value)} />
+            </label>
+            <label>
+              <span>Graduation Year</span>
+              <input value={profile.graduationYear || 'Not added'} disabled />
+            </label>
+          </div>
+        </article>
+
+        <article className="profile-panel">
+          <div className="profile-panel-header">
+            <h3>Technical Skills</h3>
+          </div>
+          <textarea
+            className="skills-editor"
+            rows="4"
+            placeholder="React, Node.js, MongoDB, Data Structures"
+            value={formatSkills(profile.skills)}
+            onChange={(event) => handleSkillsChange(event.target.value)}
+          />
+          {profile.skills.length ? (
+            <div className="skill-chip-list" aria-label="Current skills">
+              {profile.skills.slice(0, 20).map((skill) => (
+                <span key={skill}>{skill}</span>
+              ))}
+            </div>
+          ) : (
+            <p className="empty-card-copy">Upload a resume or add skills manually.</p>
+          )}
+        </article>
+
+        <article className="profile-panel">
+          <div className="profile-panel-header">
+            <h3>Resume</h3>
+          </div>
+          <div className="resume-file-card">
+            <span className="resume-icon" aria-hidden="true" />
+            <div>
+              <strong>{profile.resumeUrl ? resumeFileName : 'No resume uploaded'}</strong>
+              <small>{profile.resumeUrl ? 'Uploaded resume is attached to your profile.' : 'Upload a PDF resume to fetch profile details.'}</small>
+            </div>
+            <div className="resume-actions">
+              {profile.resumeUrl ? (
+                <a href={profile.resumeUrl} target="_blank" rel="noreferrer">
+                  View
+                </a>
+              ) : null}
+              <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={status === 'uploading'}>
+                {profile.resumeUrl ? 'Replace' : 'Upload'}
+              </button>
+            </div>
           </div>
         </article>
       </section>
 
       <section className="resume-card">
-        <div>
-          <strong>{profile.resumeUrl ? 'Resume uploaded' : 'No resume uploaded yet'}</strong>
-          <small>{profile.resumeUrl || 'Upload a PDF resume to attach it to your profile.'}</small>
+        <div className="resume-copy">
+          <div>
+            <strong>Resume parsing</strong>
+            <small>Upload a PDF and CampusIQ will fetch readable profile details automatically.</small>
+          </div>
         </div>
-        <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={status === 'uploading'}>
-          {status === 'uploading' ? 'Uploading...' : 'Upload Resume'}
-        </button>
+        <div className="resume-actions">
+          <button type="button" onClick={() => resumeInputRef.current?.click()} disabled={status === 'uploading'}>
+            {status === 'uploading' ? 'Fetching...' : 'Upload PDF'}
+          </button>
+        </div>
         <input
           ref={resumeInputRef}
           className="resume-input"
@@ -292,7 +406,7 @@ export default function StudentProfilePage() {
 
       <div className="profile-actions">
         <button type="button" onClick={handleSave} disabled={status === 'saving' || status === 'loading'}>
-          {status === 'saving' ? 'Saving...' : 'Save Profile'}
+          {status === 'saving' ? 'Saving...' : 'Save Changes'}
         </button>
       </div>
     </div>

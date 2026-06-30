@@ -17,6 +17,7 @@
 # Build output / production
 /dist
 /frontend/dist
+/backend/uploads
 
 # Logs
 logs

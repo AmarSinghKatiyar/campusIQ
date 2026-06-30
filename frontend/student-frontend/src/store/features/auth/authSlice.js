@@ -43,6 +43,8 @@ const savePersistedState = (state) => {
           githubUrl: state.user.githubUrl,
           linkedinUrl: state.user.linkedinUrl,
           skills: state.user.skills,
+          resumeUrl: state.user.resumeUrl,
+          placementStatus: state.user.placementStatus,
           securityPreferences: state.user.securityPreferences,
         }
       : null,
