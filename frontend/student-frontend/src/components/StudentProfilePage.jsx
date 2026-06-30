@@ -1,9 +1,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
-import { updateUserProfile } from '../store/features/auth/authSlice'
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
-
+import { updateUser } from '../store/features/auth/authSlice'
+import api from './api'
+import './ProfilePage.css'
 const emptyProfile = {
   name: '',
   email: '',
@@ -63,18 +62,15 @@ export default function StudentProfilePage() {
       setMessage('')
 
       try {
-        const response = await fetch(`${API_BASE_URL}/students/profile`, {
-          credentials: 'include',
-        })
-        const data = await response.json()
+        const { data } = await api.get('/students/profile')
 
-        if (!response.ok || !data.success) {
+        if (!data.success) {
           throw new Error(data.message || 'Unable to fetch profile')
         }
 
         const nextProfile = normalizeProfile(data.data)
         setProfile(nextProfile)
-        dispatch(updateUserProfile(nextProfile))
+        dispatch(updateUser(nextProfile))
         setStatus('idle')
       } catch (error) {
         setStatus('error')
@@ -117,23 +113,15 @@ export default function StudentProfilePage() {
         linkedinUrl: profile.linkedinUrl,
       }
 
-      const response = await fetch(`${API_BASE_URL}/students/profile`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
-      const data = await response.json()
+      const { data } = await api.put('/students/profile', payload)
 
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.message || 'Unable to update profile')
       }
 
       const nextProfile = normalizeProfile(data.data)
       setProfile(nextProfile)
-      dispatch(updateUserProfile(nextProfile))
+      dispatch(updateUser(nextProfile))
       setStatus('idle')
       setMessage('Profile updated successfully')
     } catch (error) {
@@ -160,14 +148,9 @@ export default function StudentProfilePage() {
       const formData = new FormData()
       formData.append('resume', file)
 
-      const response = await fetch(`${API_BASE_URL}/students/upload-resume`, {
-        method: 'POST',
-        credentials: 'include',
-        body: formData,
-      })
-      const data = await response.json()
+      const { data } = await api.post('/students/upload-resume', formData)
 
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.message || 'Unable to upload resume')
       }
 
@@ -176,7 +159,7 @@ export default function StudentProfilePage() {
         resumeUrl: data.data?.resumeUrl,
       })
       setProfile(nextProfile)
-      dispatch(updateUserProfile(nextProfile))
+      dispatch(updateUser(nextProfile))
       setStatus('idle')
       setMessage('Resume uploaded successfully')
     } catch (error) {
