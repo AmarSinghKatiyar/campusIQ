@@ -14,16 +14,21 @@ const Student = require('../models/Student');
  */
 exports.getAllOpportunities = async (req, res) => {
   try {
-    const opportunities = await Opportunity.find({ applyBy: { $gte: new Date() } })
+    const opportunities = await Opportunity.find()
       .populate('postedBy', 'name')
       .sort({ createdAt: -1 });
 
+    console.log('Opportunities found:', opportunities);
+
     res.status(200).json({
       success: true,
+      message: 'Opportunities fetched successfully',
       count: opportunities.length,
       data: opportunities,
     });
   } catch (error) {
+    console.error('Error fetching opportunities:', error);
+
     res.status(500).json({ success: false, message: 'Server Error: ' + error.message });
   }
 };
