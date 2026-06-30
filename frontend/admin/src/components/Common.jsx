@@ -1,4 +1,12 @@
-import { ArrowDownRight, ArrowUpRight } from "lucide-react";
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  User,
+  Briefcase,
+  Zap,
+  GraduationCap,
+  Check,
+} from "lucide-react";
 import { COLORS } from "../constants/colors";
 
 export function PasswordStrength({ password }) {
@@ -88,8 +96,6 @@ export function BadgePill({ label }) {
 }
 
 export function ActivityDot({ type }) {
-  const { User, Briefcase, Zap, GraduationCap, Check } = require("lucide-react");
-  
   const map = {
     profile: { icon: <User size={12} />, bg: "bg-indigo-50", fg: "text-indigo-600" },
     drive: { icon: <Briefcase size={12} />, bg: "bg-emerald-50", fg: "text-emerald-600" },

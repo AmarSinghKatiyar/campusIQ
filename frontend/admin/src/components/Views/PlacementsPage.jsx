@@ -2,21 +2,19 @@ import { useEffect, useMemo, useState } from "react";
 import {
   Briefcase,
   Plus,
-  Link as LinkIcon,
   X,
   Calendar,
-  MapPin,
   IndianRupee,
   Users,
   CheckCircle2,
   ChevronLeft,
-  ExternalLink,
   Trash2,
   Loader2,
   UserPlus,
 } from "lucide-react";
 import { api } from "../lib/api";
 
+// Matches Application.stage in the (separate) applications sub-resource.
 const STAGES = ["Applied", "Shortlisted", "Interview", "Offered", "Placed", "Rejected"];
 
 const STAGE_STYLES = {
@@ -28,21 +26,17 @@ const STAGE_STYLES = {
   Rejected: "bg-[color-mix(in_oklab,var(--destructive)_12%,white)] text-[var(--destructive)]",
 };
 
+// Matches Placement.status enum: ['Active', 'Completed', 'Cancelled']
+const DRIVE_STATUSES = ["Active", "Completed", "Cancelled"];
+
 const DRIVE_STATUS_STYLES = {
-  Draft: "bg-muted text-muted-foreground",
-  Published: "bg-[color-mix(in_oklab,var(--accent)_16%,white)] text-[var(--accent)]",
-  Closed: "bg-[color-mix(in_oklab,var(--destructive)_10%,white)] text-[var(--destructive)]",
+  Active: "bg-[color-mix(in_oklab,var(--accent)_16%,white)] text-[var(--accent)]",
+  Completed: "bg-secondary text-secondary-foreground",
+  Cancelled: "bg-[color-mix(in_oklab,var(--destructive)_10%,white)] text-[var(--destructive)]",
 };
 
-const ALL_BRANCHES = [
-  "Computer Science",
-  "Computer Science (AI)",
-  "Information Technology",
-  "Electronics",
-  "Mechanical",
-  "Civil",
-  "Electrical",
-];
+// Matches Placement.eligibilityCriteria.branchesAllowed enum
+const ALL_BRANCHES = ["Computer Science", "Electronics", "Mechanical", "Civil", "Electrical"];
 
 function initials(name = "") {
   return name.split(" ").map((p) => p[0]).slice(0, 2).join("").toUpperCase();
@@ -52,13 +46,11 @@ function emptyDraft() {
   return {
     companyName: "",
     jobRole: "",
-    link: "",
-    description: "",
-    package: "",
-    location: "",
+    ctc: "",
+    startDate: "",
+    endDate: "",
     eligibleBranches: [],
     minCgpa: "",
-    deadline: "",
   };
 }
 
@@ -78,22 +70,21 @@ function DriveForm({ onSubmit, onCancel, saving }) {
     }));
   }
 
-  const valid = form.companyName.trim() && form.jobRole.trim() && form.deadline;
+  // Required per schema: companyName, ctc, jobRole, startDate
+  const valid = form.companyName.trim() && form.jobRole.trim() && form.ctc && form.startDate;
 
-  function buildPayload(status) {
+  function buildPayload() {
     return {
       companyName: form.companyName,
       jobRole: form.jobRole,
-      link: form.link,
-      description: form.description,
-      package: form.package || "TBD",
-      location: form.location,
-      deadline: form.deadline,
-      status,
+      ctc: parseFloat(form.ctc),
+      startDate: form.startDate,
+      endDate: form.endDate || null,
       eligibilityCriteria: {
         minCGPA: form.minCgpa ? parseFloat(form.minCgpa) : 0,
         branchesAllowed: form.eligibleBranches,
       },
+      // status defaults to "Active" per schema; omitted so the backend default applies
     };
   }
 
@@ -127,48 +118,20 @@ function DriveForm({ onSubmit, onCancel, saving }) {
         </div>
       </div>
 
-      <div>
-        <label className="text-sm text-muted-foreground mb-1.5 block">Job link</label>
-        <div className="relative">
-          <LinkIcon className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            value={form.link}
-            onChange={(e) => update("link", e.target.value)}
-            placeholder="https://careers.company.com/job/..."
-            className="w-full rounded-lg border border-border bg-[var(--input-background)] pl-9 pr-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-      </div>
-
-      <div>
-        <label className="text-sm text-muted-foreground mb-1.5 block">Description</label>
-        <textarea
-          value={form.description}
-          onChange={(e) => update("description", e.target.value)}
-          placeholder="Role overview, interview process, what to expect..."
-          rows={3}
-          className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring resize-none"
-        />
-      </div>
-
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div>
-          <label className="text-sm text-muted-foreground mb-1.5 block">Package</label>
-          <input
-            value={form.package}
-            onChange={(e) => update("package", e.target.value)}
-            placeholder="e.g. ₹12 LPA"
-            className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
-        </div>
-        <div>
-          <label className="text-sm text-muted-foreground mb-1.5 block">Location</label>
-          <input
-            value={form.location}
-            onChange={(e) => update("location", e.target.value)}
-            placeholder="e.g. Bengaluru"
-            className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
+          <label className="text-sm text-muted-foreground mb-1.5 block">CTC (LPA)</label>
+          <div className="relative">
+            <IndianRupee className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              type="number"
+              step="0.1"
+              value={form.ctc}
+              onChange={(e) => update("ctc", e.target.value)}
+              placeholder="e.g. 12"
+              className="w-full rounded-lg border border-border bg-[var(--input-background)] pl-9 pr-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
         </div>
         <div>
           <label className="text-sm text-muted-foreground mb-1.5 block">Min. CGPA</label>
@@ -181,6 +144,7 @@ function DriveForm({ onSubmit, onCancel, saving }) {
             className="w-full rounded-lg border border-border bg-[var(--input-background)] px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
           />
         </div>
+        <div />
       </div>
 
       <div>
@@ -202,16 +166,30 @@ function DriveForm({ onSubmit, onCancel, saving }) {
         </div>
       </div>
 
-      <div>
-        <label className="text-sm text-muted-foreground mb-1.5 block">Application deadline</label>
-        <div className="relative max-w-xs">
-          <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
-          <input
-            type="date"
-            value={form.deadline}
-            onChange={(e) => update("deadline", e.target.value)}
-            className="w-full rounded-lg border border-border bg-[var(--input-background)] pl-9 pr-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
-          />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label className="text-sm text-muted-foreground mb-1.5 block">Start date</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              type="date"
+              value={form.startDate}
+              onChange={(e) => update("startDate", e.target.value)}
+              className="w-full rounded-lg border border-border bg-[var(--input-background)] pl-9 pr-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
+        </div>
+        <div>
+          <label className="text-sm text-muted-foreground mb-1.5 block">End date (optional)</label>
+          <div className="relative">
+            <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 size-4 text-muted-foreground" />
+            <input
+              type="date"
+              value={form.endDate}
+              onChange={(e) => update("endDate", e.target.value)}
+              className="w-full rounded-lg border border-border bg-[var(--input-background)] pl-9 pr-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
         </div>
       </div>
 
@@ -221,52 +199,52 @@ function DriveForm({ onSubmit, onCancel, saving }) {
         </button>
         <button
           disabled={!valid || saving}
-          onClick={() => onSubmit(buildPayload("Draft"))}
-          className="rounded-lg border border-border px-4 py-2 text-sm text-foreground hover:bg-muted transition-colors disabled:opacity-40"
-        >
-          Save as draft
-        </button>
-        <button
-          disabled={!valid || saving}
-          onClick={() => onSubmit(buildPayload("Published"))}
+          onClick={() => onSubmit(buildPayload())}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm text-primary-foreground hover:opacity-90 transition-opacity disabled:opacity-40"
         >
           {saving && <Loader2 className="size-4 animate-spin" />}
-          Publish to students
+          Create drive
         </button>
       </div>
     </div>
   );
 }
 
-function DriveCard({ drive, onOpen, onDelete }) {
+function DriveCard({ drive, onOpen, onDelete, onChangeStatus }) {
   return (
     <div className="rounded-xl border border-border bg-card p-5 flex flex-col gap-4">
       <div className="flex items-start justify-between gap-3">
         <div>
-          <div className="flex items-center gap-2">
-            <h3 className="text-foreground">{drive.companyName}</h3>
-            <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${DRIVE_STATUS_STYLES[drive.status]}`}>
-              {drive.status}
-            </span>
-          </div>
+          <h3 className="text-foreground">{drive.companyName}</h3>
           <p className="text-muted-foreground text-sm mt-0.5">{drive.jobRole}</p>
         </div>
-        <button onClick={() => onDelete(drive._id)} className="text-muted-foreground hover:text-[var(--destructive)] transition-colors">
-          <Trash2 className="size-4" />
-        </button>
+        <div className="flex items-center gap-2">
+          <select
+            value={drive.status}
+            onChange={(e) => onChangeStatus(drive._id, e.target.value)}
+            className={`rounded-full border-0 px-2.5 py-0.5 text-xs font-medium outline-none focus:ring-2 focus:ring-ring ${DRIVE_STATUS_STYLES[drive.status]}`}
+          >
+            {DRIVE_STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
+          </select>
+          <button onClick={() => onDelete(drive._id)} className="text-muted-foreground hover:text-[var(--destructive)] transition-colors">
+            <Trash2 className="size-4" />
+          </button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-xs text-muted-foreground">
-        <span className="inline-flex items-center gap-1"><IndianRupee className="size-3.5" />{drive.package}</span>
-        <span className="inline-flex items-center gap-1"><MapPin className="size-3.5" />{drive.location || "—"}</span>
+        <span className="inline-flex items-center gap-1"><IndianRupee className="size-3.5" />{drive.ctc} LPA</span>
         <span className="inline-flex items-center gap-1">
           <Calendar className="size-3.5" />
-          Deadline {drive.deadline ? new Date(drive.deadline).toLocaleDateString() : "—"}
+          Starts {drive.startDate ? new Date(drive.startDate).toLocaleDateString() : "—"}
         </span>
+        {drive.endDate && (
+          <span className="inline-flex items-center gap-1">
+            <Calendar className="size-3.5" />
+            Ends {new Date(drive.endDate).toLocaleDateString()}
+          </span>
+        )}
       </div>
-
-      {drive.description && <p className="text-sm text-muted-foreground line-clamp-2">{drive.description}</p>}
 
       <div className="flex flex-wrap gap-1.5">
         {(drive.eligibilityCriteria?.branchesAllowed || []).map((b) => (
@@ -274,30 +252,27 @@ function DriveCard({ drive, onOpen, onDelete }) {
             {b}
           </span>
         ))}
+        {drive.eligibilityCriteria?.minCGPA > 0 && (
+          <span className="inline-flex items-center rounded-full bg-muted px-2 py-0.5 text-xs text-muted-foreground">
+            Min CGPA {drive.eligibilityCriteria.minCGPA.toFixed(1)}
+          </span>
+        )}
       </div>
 
       <div className="flex items-center justify-between pt-3 border-t border-border">
         <div className="flex items-center gap-4 text-sm">
           <span className="inline-flex items-center gap-1.5 text-foreground">
             <Users className="size-3.5 text-muted-foreground" />
-            {drive.candidateCount ?? 0} applied
+            {drive.registeredStudents ?? 0} registered
           </span>
           <span className="inline-flex items-center gap-1.5 text-foreground">
             <CheckCircle2 className="size-3.5 text-[var(--accent)]" />
-            {drive.placedCount ?? 0} placed
+            {drive.selectedStudents ?? 0} selected
           </span>
         </div>
-        <div className="flex items-center gap-3">
-          {drive.link && (
-            <a href={drive.link} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground">
-              <ExternalLink className="size-3.5" />
-              Listing
-            </a>
-          )}
-          <button onClick={() => onOpen(drive._id)} className="text-sm text-primary hover:underline">
-            View candidates →
-          </button>
-        </div>
+        <button onClick={() => onOpen(drive._id)} className="text-sm text-primary hover:underline">
+          View candidates →
+        </button>
       </div>
     </div>
   );
@@ -434,7 +409,7 @@ export function PlacementsPage() {
   const [showAddCandidate, setShowAddCandidate] = useState(false);
   const [filter, setFilter] = useState("All");
 
-  const filters = ["All", "Published", "Draft", "Closed"];
+  const filters = ["All", ...DRIVE_STATUSES];
 
   async function loadDrives() {
     setLoading(true);
@@ -472,6 +447,15 @@ export function PlacementsPage() {
     try {
       await api.del(`/placements/${id}`);
       if (openDriveId === id) setOpenDriveId(null);
+      loadDrives();
+    } catch (err) {
+      alert(err.message);
+    }
+  }
+
+  async function changeDriveStatus(id, status) {
+    try {
+      await api.put(`/placements/${id}`, { status });
       loadDrives();
     } catch (err) {
       alert(err.message);
@@ -530,8 +514,8 @@ export function PlacementsPage() {
           <div>
             <h1 className="text-foreground">{drive.companyName} — {drive.jobRole}</h1>
             <p className="text-muted-foreground text-sm mt-1">
-              {candidates.length} applicant{candidates.length === 1 ? "" : "s"} ·{" "}
-              {candidates.filter((c) => c.stage === "Placed").length} placed
+              {drive.registeredStudents ?? candidates.length} registered ·{" "}
+              {drive.selectedStudents ?? candidates.filter((c) => c.stage === "Placed").length} selected
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -569,7 +553,7 @@ export function PlacementsPage() {
             Placement Drives
           </h1>
           <p className="text-muted-foreground text-sm mt-1">
-            Publish job openings to students and track shortlists through to placement
+            Track placement drives from kickoff through to final selections
           </p>
         </div>
         {!showForm && (
@@ -606,7 +590,7 @@ export function PlacementsPage() {
       ) : (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {drives.map((d) => (
-            <DriveCard key={d._id} drive={d} onOpen={openDrive} onDelete={deleteDrive} />
+            <DriveCard key={d._id} drive={d} onOpen={openDrive} onDelete={deleteDrive} onChangeStatus={changeDriveStatus} />
           ))}
 
           {drives.length === 0 && (
