@@ -1,0 +1,19 @@
+export const COLORS = {
+  INDIGO: "#4F46E5",
+  EMERALD: "#10B981",
+  PURPLE: "#8B5CF6",
+  AMBER: "#F59E0B",
+  PINK: "#EC4899",
+  RED: "#EF4444",
+  BLUE: "#3B82F6",
+  CYAN: "#06B6D4",
+  TEAL: "#14B8A6",
+};
+
+export const CHART_COLORS = [
+  COLORS.INDIGO,
+  COLORS.EMERALD,
+  COLORS.PURPLE,
+  COLORS.AMBER,
+  COLORS.PINK,
+];
