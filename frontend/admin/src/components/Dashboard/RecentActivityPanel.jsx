@@ -1,61 +1,51 @@
-import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer } from "recharts";
-import { COLORS } from "../../constants/colors";
+import { useState } from "react";
+import { Activity } from "lucide-react";
+import { ActivityDot } from "../Common";
 
-export function BranchDistribution({ data = [] }) {
-  const branchData = data.filter((b) => b.value > 0);
-  const total = branchData.reduce((sum, b) => sum + b.value, 0);
+const PAGE_SIZE = 5;
+
+export function RecentActivityPanel({ data = [] }) {
+  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
+  const activities = data || [];
+  const visible = activities.slice(0, visibleCount);
+  const hasMore = visibleCount < activities.length;
+
+  const handleViewMore = () => {
+    setVisibleCount((prev) => prev + PAGE_SIZE);
+  };
 
   return (
     <div className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm">
-      <h3 className="font-bold text-gray-900 mb-0.5" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
-        Branch-wise Distribution
-      </h3>
-      <p className="text-xs text-gray-400 mb-3">Students by branch</p>
+      <div className="flex items-center justify-between mb-4">
+        <h3 className="font-bold text-gray-900" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
+          Recent Activity
+        </h3>
+        <Activity size={14} className="text-gray-300" />
+      </div>
 
-      {branchData.length > 0 ? (
-        <>
-          <ResponsiveContainer width="100%" height={155}>
-            <PieChart>
-              <Pie
-                data={branchData}
-                cx="50%"
-                cy="50%"
-                innerRadius={42}
-                outerRadius={68}
-                paddingAngle={3}
-                dataKey="value"
-                nameKey="name"
-              >
-                {branchData.map((entry, i) => (
-                  <Cell key={i} fill={entry.color || [COLORS.INDIGO, COLORS.EMERALD, COLORS.PURPLE, COLORS.AMBER, COLORS.PINK][i % 5]} />
-                ))}
-              </Pie>
-              <Tooltip
-                contentStyle={{ borderRadius: 10, fontSize: 12 }}
-                formatter={(value, name) => [`${value} students`, name]}
-              />
-            </PieChart>
-          </ResponsiveContainer>
-
-          <div className="space-y-2 mt-1">
-            {branchData.map((b, idx) => (
-              <div key={b.name || idx} className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <div
-                    className="w-2 h-2 rounded-full flex-shrink-0"
-                    style={{ backgroundColor: b.color || [COLORS.INDIGO, COLORS.EMERALD, COLORS.PURPLE, COLORS.AMBER, COLORS.PINK][idx % 5] }}
-                  />
-                  <span className="text-gray-600">{b.name}</span>
-                </div>
-                <span className="font-bold text-gray-700">
-                  {b.value} {total > 0 ? `(${((b.value / total) * 100).toFixed(0)}%)` : ""}
-                </span>
-              </div>
-            ))}
+      <div className="space-y-3.5">
+        {visible.map((a, i) => (
+          <div key={i} className="flex gap-3 items-start">
+            <ActivityDot type={a.type || "profile"} />
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-700 leading-snug">{a.text || a.description || "Activity"}</p>
+              <p className="text-xs text-gray-400 mt-0.5">{a.time || a.timestamp || "Recently"}</p>
+            </div>
           </div>
-        </>
-      ) : (
-        <div className="py-4 text-center text-sm text-gray-500">No branch data available</div>
+        ))}
+      </div>
+
+      {activities.length === 0 && (
+        <div className="py-4 text-center text-sm text-gray-500">No activities yet</div>
+      )}
+
+      {hasMore && (
+        <button
+          onClick={handleViewMore}
+          className="w-full mt-4 py-2 rounded-xl text-xs font-semibold border border-gray-200 text-gray-500 hover:border-indigo-300 hover:text-indigo-600 transition-all"
+        >
+          View full activity
+        </button>
       )}
     </div>
   );
