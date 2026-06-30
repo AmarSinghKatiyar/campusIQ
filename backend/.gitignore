@@ -1,0 +1,4 @@
+.env
+node_modules
+/admin-backend/.env
+/admin-backend/node_modules
