@@ -418,11 +418,30 @@ If you found this project useful, consider giving it a ⭐ on GitHub.
 
 ---
 
-# 👨‍💻 Author
+# 👥 Team
+
+CampusIQ is a collaborative project developed by a dedicated team.
+
+### Team Members
+
+- Arisha Zaid
+- Akshat Pandey
+- Vijitashva Pandey
+- Akshat Singh Chandel
+- Amar Singh Katiyar
+- Vishwajeet Kushwaha
+- Harsh Singh
+- Anurag Sharma
+
+### Maintained By
 
 **Amar Singh Katiyar**
 
 GitHub: https://github.com/AmarSinghKatiyar
+
+---
+
+⭐ Special thanks to every team member for their valuable contributions to the development and continuous improvement of CampusIQ.
 
 ---
 
