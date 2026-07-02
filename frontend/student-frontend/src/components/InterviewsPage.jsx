@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+import api from "./api";
 
 function InterviewsPage() {
   const [interviews, setInterviews] = useState([]);
@@ -7,7 +7,7 @@ function InterviewsPage() {
   useEffect(() => {
     const fetchInterviews = async () => {
       try {
-        const response = await axios.get("http://localhost:5000/api/interviews");
+        const response = await api.get("/interviews");
         setInterviews(response.data.data);
       } catch (err) {
         console.error("Error fetching interviews:", err);

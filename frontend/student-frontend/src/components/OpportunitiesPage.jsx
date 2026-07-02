@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import OpportunityCard from '../components/OpportunityCard';
-import axios from 'axios';
+import api from './api';
 
 const OpportunitiesPage = () => {
   const [opportunities, setOpportunities] = useState([]);
@@ -11,7 +11,7 @@ const OpportunitiesPage = () => {
     const fetchOpportunities = async () => {
       try {
         setLoading(true);
-        const response = await axios.get('http://localhost:5000/api/opportunities');
+        const response = await api.get('/opportunities');
         setOpportunities(response.data.data || []);
         setError(null);
       } catch (err) {

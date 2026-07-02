@@ -13,15 +13,9 @@ import InterviewsPage from "./InterviewsPage";
 import LearningPage from "./Learning";
 import SettingsPage from './SettingsPage'
 import StudentProfilePage from './StudentProfilePage'
+import api from './api'
 import './ProfilePage.css'
 import './StudentDashboard.css'
-
-const stats = [
-  { label: 'Applications', value: '12', trend: '20% this week', icon: 'briefcase', tone: 'purple' },
-  { label: 'Shortlisted', value: '5', trend: '12% this week', icon: 'check', tone: 'green' },
-  { label: 'Interviews', value: '3', trend: '5% this week', icon: 'calendar', tone: 'orange' },
-  { label: 'Profile Strength', value: '85%', trend: '', icon: 'trophy', tone: 'blue', progress: 85 },
-]
 
 const chartPoints = [
   { x: 5, y: 68 },
@@ -35,25 +29,6 @@ const chartPoints = [
   { x: 93, y: 43 },
 ]
 
-const skills = [
-  { name: 'Data Structures', score: 90 },
-  { name: 'Problem Solving', score: 85 },
-  { name: 'React.js', score: 75 },
-  { name: 'Communication', score: 70 },
-  { name: 'SQL', score: 65 },
-]
-
-const opportunities = [
-  { company: 'Amazon', title: 'Amazon SDE Intern', meta: 'Software Development · Internship', match: '92%', logo: 'a' },
-  { company: 'Microsoft', title: 'Microsoft Explore Intern', meta: 'Software Engineering · Internship', match: '88%', logo: 'ms' },
-  { company: 'Adobe', title: 'Adobe Frontend Intern', meta: 'Frontend Development · Internship', match: '86%', logo: 'A' },
-]
-
-const interviews = [
-  { company: 'Google', title: 'Google SDE Intern', round: 'Technical Round', date: 'Jun 28, 2025', time: '10:00 AM', logo: 'G' },
-  { company: 'Flipkart', title: 'Flipkart SDE Intern', round: 'HR Round', date: 'Jun 30, 2025', time: '02:00 PM', logo: 'f' },
-  { company: 'Paytm', title: 'Paytm Backend Intern', round: 'Technical Round', date: 'Jul 2, 2025', time: '11:30 AM', logo: 'paytm' },
-]
 
 function DashboardIcon({ name }) {
   return <span className={`dashboard-icon icon-${name}`} aria-hidden="true" />
@@ -127,6 +102,10 @@ export default function StudentDashboard() {
     setNotice('Notification removed')
   }
 
+  const [dashboardData, setDashboardData] = useState(null)
+  const [dashboardLoading, setDashboardLoading] = useState(true)
+  const [dashboardError, setDashboardError] = useState('')
+
   const firstName = user?.name?.split(' ')?.[0] || 'Student'
   const initials = useMemo(() => {
     if (!user?.name) return 'ST'
@@ -137,6 +116,30 @@ export default function StudentDashboard() {
       .map((part) => part[0].toUpperCase())
       .join('')
   }, [user?.name])
+
+  useEffect(() => {
+    const fetchDashboard = async () => {
+      if (!user?.email) return
+      setDashboardLoading(true)
+      setDashboardError('')
+
+      try {
+        const response = await api.get('/students/dashboard')
+
+        if (!response.data?.success) {
+          throw new Error(response.data?.message || 'Unable to load dashboard')
+        }
+
+        setDashboardData(response.data.data)
+      } catch (error) {
+        setDashboardError(error.message || 'Unable to load dashboard')
+      } finally {
+        setDashboardLoading(false)
+      }
+    }
+
+    fetchDashboard()
+  }, [user?.email])
 
   const handleAction = (message) => {
     setNotice(message)
@@ -158,10 +161,46 @@ export default function StudentDashboard() {
               <p>Here&apos;s what&apos;s happening with your placements today.</p>
             </div>
 
+            {dashboardLoading ? (
+              <p className="dashboard-loading">Loading dashboard data...</p>
+            ) : dashboardError ? (
+              <p className="dashboard-error">{dashboardError}</p>
+            ) : null}
+
             {notice ? <p className="dashboard-notice">{notice}</p> : null}
 
             <section className="stats-grid" aria-label="Placement summary">
-              {stats.map((item) => (
+              {[
+                {
+                  label: 'Applications',
+                  value: dashboardData?.applicationsCount ?? '0',
+                  trend: '20% this week',
+                  icon: 'briefcase',
+                  tone: 'purple',
+                },
+                {
+                  label: 'Shortlisted',
+                  value: dashboardData?.shortlistedCount ?? '0',
+                  trend: '12% this week',
+                  icon: 'check',
+                  tone: 'green',
+                },
+                {
+                  label: 'Interviews',
+                  value: dashboardData?.interviewsCount ?? '0',
+                  trend: '5% this week',
+                  icon: 'calendar',
+                  tone: 'orange',
+                },
+                {
+                  label: 'Profile Strength',
+                  value: `${dashboardData?.profileStrength ?? 0}%`,
+                  trend: '',
+                  icon: 'trophy',
+                  tone: 'blue',
+                  progress: dashboardData?.profileStrength ?? 0,
+                },
+              ].map((item) => (
                 <article className="stat-card" key={item.label}>
                   <div className={`stat-icon ${item.tone}`}>
                     <DashboardIcon name={item.icon} />
@@ -170,7 +209,7 @@ export default function StudentDashboard() {
                     <strong>{item.value}</strong>
                     <span>{item.label}</span>
                     {item.trend ? <small>↑ {item.trend}</small> : null}
-                    {item.progress ? (
+                    {item.progress !== undefined ? (
                       <span className="profile-progress" aria-label={`${item.progress}% profile strength`}>
                         <span style={{ width: `${item.progress}%` }} />
                       </span>
@@ -233,17 +272,25 @@ export default function StudentDashboard() {
                   </button>
                 </div>
                 <div className="skill-list">
-                  {skills.map((skill) => (
-                    <div className="skill-row" key={skill.name}>
-                      <div>
-                        <span>{skill.name}</span>
-                        <strong>{skill.score}%</strong>
+                  {(dashboardData?.skills ?? []).length > 0 ? (
+                    dashboardData.skills.map((skill) => (
+                      <div className="skill-row" key={skill}>
+                        <div>
+                          <span>{skill}</span>
+                          <strong>100%</strong>
+                        </div>
+                        <span className="skill-track">
+                          <span style={{ width: '100%' }} />
+                        </span>
                       </div>
-                      <span className="skill-track">
-                        <span style={{ width: `${skill.score}%` }} />
-                      </span>
+                    ))
+                  ) : (
+                    <div className="skill-row">
+                      <div>
+                        <span>No skills available yet.</span>
+                      </div>
                     </div>
-                  ))}
+                  )}
                 </div>
               </article>
             </section>
@@ -257,22 +304,45 @@ export default function StudentDashboard() {
                   </button>
                 </div>
                 <div className="opportunity-list">
-                  {opportunities.map((item) => (
-                    <button
-                      className="opportunity-row"
-                      key={item.title}
-                      type="button"
-                      onClick={() => handleAction(`${item.title} selected`)}
-                    >
-                      <span className={`company-logo ${item.company.toLowerCase()}`}>{item.logo}</span>
-                      <span className="row-copy">
-                        <strong>{item.title}</strong>
-                        <small>{item.meta}</small>
-                      </span>
-                      <span className="match-pill">Match: {item.match}</span>
-                      <DashboardIcon name="chevron" />
-                    </button>
-                  ))}
+                  {(dashboardData?.recommendedOpportunities ?? []).length > 0 ? (
+                    dashboardData.recommendedOpportunities.map((item) => {
+                      const requiredSkills = item.requiredSkills || item.skillsRequired || []
+                      const match = requiredSkills.length
+                        ? Math.round(
+                            (requiredSkills.filter((skill) =>
+                              (dashboardData.skills || []).some(
+                                (userSkill) => userSkill.toLowerCase() === skill.toLowerCase(),
+                              ),
+                            ).length /
+                              requiredSkills.length) *
+                              100,
+                          )
+                        : 0
+
+                      return (
+                        <button
+                          className="opportunity-row"
+                          key={`${item.company}-${item.title}`}
+                          type="button"
+                          onClick={() => handleAction(`${item.title} selected`)}
+                        >
+                          <span className={`company-logo ${item.company.toLowerCase()}`}>
+                            {item.companyLogo ? item.companyLogo : item.company.charAt(0)}
+                          </span>
+                          <span className="row-copy">
+                            <strong>{item.title}</strong>
+                            <small>{`${item.type} · ${item.location || 'Remote'}`}</small>
+                          </span>
+                          <span className="match-pill">Match: {match}%</span>
+                          <DashboardIcon name="chevron" />
+                        </button>
+                      )
+                    })
+                  ) : (
+                    <div className="opportunity-row">
+                      <span>No recommended opportunities available yet.</span>
+                    </div>
+                  )}
                 </div>
               </article>
 
@@ -284,24 +354,32 @@ export default function StudentDashboard() {
                   </button>
                 </div>
                 <div className="interview-list">
-                  {interviews.map((item) => (
-                    <button
-                      className="interview-row"
-                      key={item.title}
-                      type="button"
-                      onClick={() => handleAction(`${item.company} interview selected`)}
-                    >
-                      <span className={`company-logo ${item.company.toLowerCase()}`}>{item.logo}</span>
-                      <span className="row-copy">
-                        <strong>{item.title}</strong>
-                        <small>{item.round}</small>
-                      </span>
-                      <span className="date-copy">
-                        <strong>{item.date}</strong>
-                        <small>{item.time}</small>
-                      </span>
-                    </button>
-                  ))}
+                  {(dashboardData?.upcomingInterviews ?? []).length > 0 ? (
+                    dashboardData.upcomingInterviews.map((item) => (
+                      <button
+                        className="interview-row"
+                        key={`${item.company}-${item.role}-${item.date}`}
+                        type="button"
+                        onClick={() => handleAction(`${item.company} interview selected`)}
+                      >
+                        <span className={`company-logo ${item.company.toLowerCase()}`}>
+                          {item.company.charAt(0)}
+                        </span>
+                        <span className="row-copy">
+                          <strong>{item.role}</strong>
+                          <small>{item.round}</small>
+                        </span>
+                        <span className="date-copy">
+                          <strong>{new Date(item.date).toLocaleDateString()}</strong>
+                          <small>{item.time}</small>
+                        </span>
+                      </button>
+                    ))
+                  ) : (
+                    <div className="interview-row">
+                      <span>No upcoming interviews available yet.</span>
+                    </div>
+                  )}
                 </div>
                 <button
                   className="all-interviews-btn"

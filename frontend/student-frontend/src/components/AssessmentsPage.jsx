@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axios from 'axios';
+import api from './api';
 
 export default function AssessmentsPage() {
   const [assessments, setAssessments] = useState([]);
@@ -11,7 +11,7 @@ export default function AssessmentsPage() {
       try {
         setLoading(true);
         setError(null);
-        const response = await axios.get('http://localhost:5000/api/assessments');
+        const response = await api.get('/assessments');
         setAssessments(response.data.data || []);
       } catch (err) {
         console.error('Error fetching assessments:', err);

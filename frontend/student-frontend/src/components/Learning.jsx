@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import api from "./api";
 
 const LearningPage = () => {
   const [learning, setLearning] = useState([]);
@@ -10,8 +10,8 @@ const LearningPage = () => {
       try {
         const token = localStorage.getItem("token");
 
-        const res = await axios.get(
-          "http://localhost:5000/api/learning",
+        const res = await api.get(
+          "/learning",
           {
             headers: {
               Authorization: `Bearer ${token}`,
