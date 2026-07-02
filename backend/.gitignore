@@ -1,3 +1,4 @@
+.env
 # dependencies
 node_modules/
 **/node_modules/
@@ -7,3 +8,6 @@ node_modules/
 
 # macOS files
 .DS_Store
+
+/admin-backend/.env
+/admin-backend/node_modules
