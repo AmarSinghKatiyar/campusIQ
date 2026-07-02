@@ -1,5 +1,7 @@
 // Student Controller
 const Student = require('../models/Student');
+const Opportunity = require('../models/Opportunity');
+const Interview = require('../models/Interview');
 const { cloudinary } = require('../config/cloudinary');
 const DatauriParser = require('datauri/parser');
 const fs = require('fs/promises');
@@ -551,18 +553,70 @@ exports.deleteResume = async (req, res) => {
  * Route: GET /api/students/dashboard
  * Access: Private (Protected with JWT)
  */
+const calculateProfileStrength = (student) => {
+    const fields = [
+        student.name,
+        student.email,
+        student.phoneNumber,
+        student.rollNumber,
+        student.branch,
+        student.graduationYear,
+        student.cgpa,
+        student.githubUrl,
+        student.linkedinUrl,
+        student.resumeUrl,
+        Array.isArray(student.skills) ? student.skills.length : 0,
+    ];
+
+    const filled = fields.filter((value) => {
+        if (typeof value === 'number') {
+            return value !== null && value !== undefined;
+        }
+        return Boolean(value);
+    });
+
+    return Math.round((filled.length / fields.length) * 100);
+};
+
 exports.getDashboard = async (req, res) => {
     try {
         const student = await Student.findById(req.user._id).select(
-            "name cgpa skills placementStatus"
+            'name email phoneNumber rollNumber branch graduationYear cgpa skills placementStatus githubUrl linkedinUrl resumeUrl'
         );
 
         if (!student) {
             return res.status(404).json({
                 success: false,
-                message: "Student not found",
+                message: 'Student not found',
             });
         }
+
+        const applicationsCount = await Opportunity.countDocuments({
+            applicants: student._id,
+        });
+
+        const shortlistedCount = await Opportunity.countDocuments({
+            applicants: student._id,
+            status: 'Open',
+        });
+
+        const interviewsCount = await Interview.countDocuments({
+            status: 'Upcoming',
+        });
+
+        const recommendedOpportunities = await Opportunity.find({
+            status: 'Open',
+        })
+            .sort({ createdAt: -1 })
+            .limit(3)
+            .select('company title type description companyLogo applyBy deadline requiredSkills skillsRequired location');
+
+        const upcomingInterviews = await Interview.find({
+            status: 'Upcoming',
+        })
+            .sort({ date: 1 })
+            .limit(3)
+            .select('company role round date time location status meetingLink');
 
         res.status(200).json({
             success: true,
@@ -571,14 +625,20 @@ exports.getDashboard = async (req, res) => {
                 cgpa: student.cgpa,
                 skills: student.skills,
                 placementStatus: student.placementStatus,
+                applicationsCount,
+                shortlistedCount,
+                interviewsCount,
+                profileStrength: calculateProfileStrength(student),
+                recommendedOpportunities,
+                upcomingInterviews,
             },
         });
     } catch (error) {
-        console.error("Error in getDashboard:", error);
+        console.error('Error in getDashboard:', error);
 
         res.status(500).json({
             success: false,
-            message: "Error fetching dashboard: " + error.message,
+            message: 'Error fetching dashboard: ' + error.message,
         });
     }
 }; 

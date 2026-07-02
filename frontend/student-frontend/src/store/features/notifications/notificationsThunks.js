@@ -6,7 +6,7 @@ import {
   deleteNotificationSuccess,
 } from './notificationsSlice'
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000'
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:5000/api'
 
 const handleResponse = async (response) => {
   const data = await response.json()
@@ -25,7 +25,7 @@ export const fetchNotifications = (email) => async (dispatch) => {
     }
 
     const response = await fetch(
-      `${API_BASE}/api/notifications?email=${encodeURIComponent(email)}`,
+      `${API_BASE}/notifications?email=${encodeURIComponent(email)}`,
       {
         credentials: 'include',
       }
@@ -44,7 +44,7 @@ export const markNotificationRead = ({ email, notificationId }) => async (dispat
     }
 
     const response = await fetch(
-      `${API_BASE}/api/notifications/${notificationId}/read?email=${encodeURIComponent(email)}`,
+      `${API_BASE}/notifications/${notificationId}/read?email=${encodeURIComponent(email)}`,
       {
         method: 'PATCH',
         credentials: 'include',
@@ -67,7 +67,7 @@ export const deleteNotification = ({ email, notificationId }) => async (dispatch
     }
 
     const response = await fetch(
-      `${API_BASE}/api/notifications/${notificationId}?email=${encodeURIComponent(email)}`,
+      `${API_BASE}/notifications/${notificationId}?email=${encodeURIComponent(email)}`,
       {
         method: 'DELETE',
         credentials: 'include',

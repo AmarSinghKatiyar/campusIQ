@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useDispatch, useSelector } from 'react-redux'
 import { updateUser } from '../store/features/auth/authSlice'
+import api from './api'
 
 const defaultSecurityPreferences = {
   twoStepVerification: false,
@@ -76,18 +77,10 @@ export default function SettingsPage() {
         securityPreferences: form.securityPreferences,
       }
 
-      const response = await fetch('http://localhost:5000/api/students/profile', {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify(payload),
-      })
+      const response = await api.put('/students/profile', payload)
+      const data = response.data
 
-      const data = await response.json()
-
-      if (!response.ok || !data.success) {
+      if (!data.success) {
         throw new Error(data.message || data.errors?.join(', ') || 'Unable to save settings')
       }
 
